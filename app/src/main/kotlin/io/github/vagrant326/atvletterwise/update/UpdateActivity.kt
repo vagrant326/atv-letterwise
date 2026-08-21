@@ -8,14 +8,18 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageInstaller
 import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.util.TypedValue
 import android.view.Gravity
+import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import io.github.vagrant326.atvletterwise.BuildConfig
@@ -45,18 +49,24 @@ private sealed interface Check {
  *
  * Installing goes through [PackageInstaller] rather than an `ACTION_VIEW` intent. The intent
  * route cannot report anything: handing it a file succeeds even when the installer then shows
- * nothing, which is exactly the dead end the second update ran into — the screen could only
- * say "if nothing appeared, try again". A session reports back a status and a message, and
- * hands us the confirmation dialog explicitly instead of leaving it to chance.
+ * nothing, which is the dead end the second update ran into. A session reports back a status
+ * and a message, and hands us the confirmation dialog explicitly instead of leaving it to
+ * chance.
  *
  * All of it exists only because sideloading has no update channel. It comes out if the
  * project ever ships through a store.
  */
 class UpdateActivity : Activity() {
 
-    private lateinit var status: TextView
-    private lateinit var action: TextView
+    private lateinit var stateLabel: TextView
+    private lateinit var headline: TextView
+    private lateinit var detail: TextView
+    private lateinit var stateCard: LinearLayout
+    private lateinit var primary: Button
+    private lateinit var secondary: Button
+
     private val worker = Executors.newSingleThreadExecutor()
+    private var downloaded: File? = null
 
     private val installResult = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -67,27 +77,33 @@ class UpdateActivity : Activity() {
                     @Suppress("DEPRECATION")
                     val confirm = intent.getParcelableExtra<Intent>(Intent.EXTRA_INTENT)
                     if (confirm == null) {
-                        status.text = "The system asked for confirmation but sent no dialog."
+                        show("PROBLEM", "No confirmation dialog", "The system asked for " +
+                            "confirmation but did not say what to show.", CARD_WARNING)
                         return
                     }
                     confirm.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     runCatching { startActivity(confirm) }.onFailure {
-                        status.text = "Could not open the confirmation dialog: " +
-                            it.javaClass.simpleName
+                        show("PROBLEM", "Could not open the dialog", it.javaClass.simpleName, CARD_WARNING)
                     }
                 }
 
                 PackageInstaller.STATUS_SUCCESS -> {
-                    status.text = "Installed. Reopen the app to see the new version."
-                    action.visibility = TextView.GONE
+                    show(
+                        "DONE",
+                        "Installed",
+                        "Android stops an app when it replaces it, so this screen will close. " +
+                            "The keyboard itself keeps working — reopen the app only to change " +
+                            "settings.",
+                        CARD_OK,
+                    )
+                    primary.visibility = View.GONE
+                    secondary.visibility = View.GONE
                 }
 
                 else -> {
                     val message = intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE)
-                    status.text = "Install failed (status $code)\n${message ?: "no detail"}"
-                    action.text = "Try again"
-                    action.isClickable = true
-                    action.setOnClickListener { download() }
+                    show("FAILED", "Install failed", "status $code\n${message ?: "no detail"}", CARD_WARNING)
+                    offerPrimary("Try again") { download() }
                 }
             }
         }
@@ -96,34 +112,78 @@ class UpdateActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        status = TextView(this).apply {
-            setTextColor(Color.WHITE)
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f)
-            text = "Installed ${BuildConfig.VERSION_NAME}\nChecking…"
+        stateLabel = label("CHECKING", MUTED, 12f)
+        headline = label("…", Color.WHITE, 30f)
+        detail = label("", SECONDARY, 15f)
+
+        stateCard = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            background = card(CARD)
+            setPadding(dp(24), dp(22), dp(24), dp(24))
+            layoutParams = stack(dp(20))
+            addView(stateLabel)
+            addView(headline.apply { setPadding(0, dp(6), 0, 0) })
+            addView(detail.apply { setPadding(0, dp(8), 0, 0) })
         }
-        action = TextView(this).apply {
-            setTextColor(ACCENT)
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 17f)
-            gravity = Gravity.CENTER
-            isFocusable = true
-            isClickable = true
-            visibility = TextView.GONE
-            setPadding(dp(16), dp(14), dp(16), dp(14))
-            setBackgroundColor(ROW)
-            layoutParams = LinearLayout.LayoutParams(dp(420), ViewGroup.LayoutParams.WRAP_CONTENT)
-                .apply { topMargin = dp(20) }
-            setOnFocusChangeListener { view, hasFocus ->
-                view.setBackgroundColor(if (hasFocus) ROW_FOCUSED else ROW)
-            }
+
+        primary = action("…") {}.apply { visibility = View.GONE }
+        secondary = action("Check again") { check(async = true) }.apply { visibility = View.GONE }
+
+        val actions = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            layoutParams = stack(dp(12))
+            addView(primary)
+            addView(secondary)
+        }
+
+        val installedCard = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            background = card(SUNKEN)
+            setPadding(dp(24), dp(16), dp(24), dp(18))
+            layoutParams = stack(dp(16))
+            addView(label("INSTALLED", MUTED, 12f))
+            addView(
+                label(BuildConfig.VERSION_NAME, SECONDARY, 15f)
+                    .apply { setPadding(0, dp(4), 0, 0) }
+            )
+            addView(
+                label(
+                    "Checked only when you press it. One request for the version, one for the " +
+                        "file, nothing sent. What you type never leaves the device.",
+                    MUTED,
+                    13f,
+                ).apply { setPadding(0, dp(8), 0, 0) }
+            )
+        }
+
+        val content = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(dp(640), ViewGroup.LayoutParams.WRAP_CONTENT)
+            addView(label("Updates", Color.WHITE, 28f))
+            addView(
+                label("LetterWise installs from its GitHub releases.", SECONDARY, 15f)
+                    .apply { setPadding(0, dp(6), 0, 0) }
+            )
+            addView(stateCard)
+            addView(actions)
+            addView(installedCard)
+            addView(
+                label("BACK returns to settings.", MUTED, 13f)
+                    .apply { setPadding(0, dp(18), 0, 0) }
+            )
         }
 
         setContentView(
-            LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
+            ScrollView(this).apply {
                 setBackgroundColor(BACKGROUND)
-                setPadding(dp(28), dp(28), dp(28), dp(28))
-                addView(status)
-                addView(action)
+                addView(
+                    LinearLayout(this@UpdateActivity).apply {
+                        orientation = LinearLayout.HORIZONTAL
+                        gravity = Gravity.CENTER_HORIZONTAL
+                        setPadding(dp(28), dp(28), dp(28), dp(32))
+                        addView(content)
+                    }
+                )
             }
         )
 
@@ -134,10 +194,7 @@ class UpdateActivity : Activity() {
             ContextCompat.RECEIVER_NOT_EXPORTED,
         )
 
-        worker.execute {
-            val outcome = check()
-            runOnUiThread { present(outcome) }
-        }
+        check(async = true)
     }
 
     override fun onDestroy() {
@@ -146,37 +203,68 @@ class UpdateActivity : Activity() {
         super.onDestroy()
     }
 
+    private fun show(state: String, title: String, body: String, cardColour: Int = CARD) {
+        stateLabel.text = state
+        headline.text = title
+        detail.text = body
+        detail.visibility = if (body.isEmpty()) View.GONE else View.VISIBLE
+        stateCard.background = card(cardColour)
+    }
+
+    private fun offerPrimary(text: String, onClick: () -> Unit) {
+        primary.text = text
+        primary.isEnabled = true
+        primary.visibility = View.VISIBLE
+        primary.setOnClickListener { onClick() }
+        primary.requestFocus()
+    }
+
+    private fun check(async: Boolean) {
+        show("CHECKING", "…", "")
+        primary.visibility = View.GONE
+        secondary.visibility = View.GONE
+        worker.execute {
+            val outcome = fetchLatest()
+            runOnUiThread { present(outcome) }
+        }
+    }
+
     private fun present(result: Check) {
-        val installed = BuildConfig.VERSION_NAME
+        secondary.visibility = View.VISIBLE
         when (result) {
-            is Check.UpToDate -> status.text = "Installed $installed\nUp to date."
-            is Check.NoReleases -> status.text = "Installed $installed\nNo releases published yet."
-            is Check.Failed -> status.text = "Installed $installed\nCheck failed: ${result.detail}"
+            is Check.UpToDate ->
+                show("UP TO DATE", BuildConfig.VERSION_NAME, "Nothing newer has been released.", CARD_OK)
+
+            is Check.NoReleases ->
+                show("NOTHING PUBLISHED", "No releases", "This repository has no releases yet.")
+
+            is Check.Failed ->
+                show("COULD NOT CHECK", "Check failed", result.detail, CARD_WARNING)
 
             is Check.Newer -> {
-                status.text = "Installed $installed\nAvailable: ${result.tag}"
-                action.text = "Download and install"
-                action.visibility = TextView.VISIBLE
-                action.requestFocus()
-                action.setOnClickListener { download() }
+                show("AVAILABLE", result.tag, "Installed ${BuildConfig.VERSION_NAME}.", CARD_ACCENT)
+                offerPrimary("Download and install") { download() }
             }
         }
     }
 
     private fun download() {
-        action.isClickable = false
-        action.text = "Downloading…"
+        primary.isEnabled = false
+        primary.text = "Downloading…"
+        show("DOWNLOADING", "0%", "")
         worker.execute {
             val target = File(cacheDir, "update.apk")
             val outcome = runCatching { fetch(target) }
             runOnUiThread {
                 outcome.fold(
-                    onSuccess = { install(target) },
+                    onSuccess = {
+                        downloaded = target
+                        install(target)
+                    },
                     onFailure = {
-                        status.text = "Download failed: ${it.javaClass.simpleName}\n" +
-                            (it.message ?: "")
-                        action.text = "Try again"
-                        action.isClickable = true
+                        show("FAILED", "Download failed", "${it.javaClass.simpleName}\n" +
+                            (it.message ?: ""), CARD_WARNING)
+                        offerPrimary("Try again") { download() }
                     },
                 )
             }
@@ -206,7 +294,7 @@ class UpdateActivity : Activity() {
                         read += count
                         if (total > 0) {
                             val percent = (read * 100 / total).toInt()
-                            runOnUiThread { action.text = "Downloading… $percent%" }
+                            runOnUiThread { headline.text = "$percent%" }
                         }
                     }
                 }
@@ -230,27 +318,29 @@ class UpdateActivity : Activity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
             !packageManager.canRequestPackageInstalls()
         ) {
-            status.text = "Allow this app to install packages, then press install again."
-            action.text = "Open the permission screen"
-            action.isClickable = true
-            action.setOnClickListener {
+            show(
+                "PERMISSION NEEDED",
+                "Allow installing",
+                "Android needs your permission for this app to install packages.",
+                CARD_WARNING,
+            )
+            offerPrimary("Open the permission screen") {
                 startActivity(
                     Intent(
                         Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
                         Uri.parse("package:$packageName"),
                     )
                 )
-                action.text = "Install"
-                action.setOnClickListener { install(apk) }
+                offerPrimary("Install") { install(apk) }
             }
             return
         }
 
-        status.text = "Handing ${apk.length() / 1024} kB to the installer…"
-        action.text = "Working…"
-        action.isClickable = false
+        show("INSTALLING", "${apk.length() / 1024} kB", "Handing the file to the system installer.")
+        primary.isEnabled = false
+        primary.text = "Working…"
 
-        val outcome = runCatching {
+        runCatching {
             val installer = packageManager.packageInstaller
             val params = PackageInstaller.SessionParams(
                 PackageInstaller.SessionParams.MODE_FULL_INSTALL
@@ -263,13 +353,10 @@ class UpdateActivity : Activity() {
                 }
                 session.commit(pendingResult(sessionId).intentSender)
             }
-        }
-        outcome.onFailure { failure ->
-            status.text = "Could not start the install: ${failure.javaClass.simpleName}\n" +
-                (failure.message ?: "")
-            action.text = "Try again"
-            action.isClickable = true
-            action.setOnClickListener { download() }
+        }.onFailure { failure ->
+            show("FAILED", "Could not start the install", "${failure.javaClass.simpleName}\n" +
+                (failure.message ?: ""), CARD_WARNING)
+            offerPrimary("Try again") { download() }
         }
     }
 
@@ -289,7 +376,7 @@ class UpdateActivity : Activity() {
 
     private fun installAction() = "$packageName.INSTALL_RESULT"
 
-    private fun check(): Check {
+    private fun fetchLatest(): Check {
         val connection = try {
             URL(API_URL).openConnection() as HttpsURLConnection
         } catch (failure: Exception) {
@@ -347,6 +434,38 @@ class UpdateActivity : Activity() {
         return false
     }
 
+    private fun label(text: String, colour: Int, sizeSp: Float) = TextView(this).apply {
+        this.text = text
+        setTextColor(colour)
+        setTextSize(TypedValue.COMPLEX_UNIT_SP, sizeSp)
+    }
+
+    private fun action(text: String, onClick: () -> Unit) = Button(this).apply {
+        this.text = text
+        isAllCaps = false
+        setTextColor(Color.WHITE)
+        setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
+        background = card(SUNKEN)
+        setPadding(dp(16), dp(12), dp(16), dp(12))
+        layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            .apply { marginEnd = dp(10) }
+        setOnFocusChangeListener { view, hasFocus ->
+            view.background = card(if (hasFocus) FOCUSED else SUNKEN)
+        }
+        setOnClickListener { onClick() }
+    }
+
+    private fun card(colour: Int) = GradientDrawable().apply {
+        shape = GradientDrawable.RECTANGLE
+        cornerRadius = dp(10).toFloat()
+        setColor(colour)
+    }
+
+    private fun stack(topMargin: Int) = LinearLayout.LayoutParams(
+        ViewGroup.LayoutParams.MATCH_PARENT,
+        ViewGroup.LayoutParams.WRAP_CONTENT,
+    ).apply { this.topMargin = topMargin }
+
     private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
 
     private companion object {
@@ -360,8 +479,13 @@ class UpdateActivity : Activity() {
         val TAG_NAME = """"tag_name"\s*:\s*"([^"]+)"""".toRegex()
 
         const val BACKGROUND = 0xFF08080B.toInt()
-        const val ROW = 0xFF16161C.toInt()
-        const val ROW_FOCUSED = 0xFF2A3A46.toInt()
-        const val ACCENT = 0xFF7FD1FF.toInt()
+        const val CARD = 0xFF16161C.toInt()
+        const val CARD_ACCENT = 0xFF14283A.toInt()
+        const val CARD_OK = 0xFF14241C.toInt()
+        const val CARD_WARNING = 0xFF2E2212.toInt()
+        const val SUNKEN = 0xFF101014.toInt()
+        const val FOCUSED = 0xFF2A3A46.toInt()
+        const val SECONDARY = 0xFFB0B0BC.toInt()
+        const val MUTED = 0xFF6B6B78.toInt()
     }
 }
