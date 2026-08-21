@@ -108,6 +108,7 @@
     <string name="support_free">LetterWise jest otwartoźródłowy, na licencji MIT. Jest darmowy, zostanie darmowy i nic w nim nie jest przytrzymane dla tych, którzy nie zapłacą.</string>
     <string name="support_thanks">Jeśli oszczędza ci mordęgi z klawiaturą-siatką i masz ochotę coś wrzucić do kapelusza, będę szczerze wdzięczny. Każda kwota pomaga, a „nie" jest całkowicie dobrą odpowiedzią.</string>
     <string name="support_scan">Zeskanuj telefonem</string>
+    <string name="support_or">albo otwórz sam</string>
     <string name="support_back">BACK wraca do ustawień.</string>
 
     <string name="strip_no_model">%1$s bez modelu</string>

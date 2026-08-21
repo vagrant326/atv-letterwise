@@ -121,6 +121,8 @@
     <string name="support_free">LetterWise is open source and MIT licensed. It is free, it will stay free, and nothing in it is held back for people who do not pay.</string>
     <string name="support_thanks">If it saves you the grind of a grid keyboard and you feel like putting something in the jar, I would be genuinely grateful. Anything at all helps, and no is a perfectly good answer.</string>
     <string name="support_scan">Scan with your phone</string>
+    <string name="support_url" translatable="false">ko-fi.com/vagrant326</string>
+    <string name="support_or">or open it yourself</string>
     <string name="support_back">BACK returns to settings.</string>
 
     <string name="strip_no_model">%1$s no model</string>
