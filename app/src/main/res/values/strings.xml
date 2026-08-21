@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">atv-letterwise</string>
+    <string name="ime_name">LetterWise</string>
+    <string name="update_name">LetterWise updates</string>
+    <string name="subtype_pl">Polski</string>
+    <string name="subtype_en">English</string>
+</resources>

@@ -16,3 +16,4 @@ dependencyResolutionManagement {
 rootProject.name = "atv-letterwise"
 
 include(":core")
+include(":app")

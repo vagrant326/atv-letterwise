@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="320dp"
+    android:height="180dp"
+    android:viewportWidth="320"
+    android:viewportHeight="180">
+
+    <path
+        android:fillColor="#101014"
+        android:pathData="M0,0h320v180H0z" />
+
+    <!-- Eight ambiguous groups, two rows of four, plus the space key set apart. -->
+    <group>
+        <path android:fillColor="#7FD1FF" android:pathData="M40,54h44v30H40z" />
+        <path android:fillColor="#7FD1FF" android:pathData="M96,54h44v30H96z" />
+        <path android:fillColor="#7FD1FF" android:pathData="M152,54h44v30h-44z" />
+        <path android:fillColor="#7FD1FF" android:pathData="M208,54h44v30h-44z" />
+        <path android:fillColor="#4A6E86" android:pathData="M40,96h44v30H40z" />
+        <path android:fillColor="#4A6E86" android:pathData="M96,96h44v30H96z" />
+        <path android:fillColor="#4A6E86" android:pathData="M152,96h44v30h-44z" />
+        <path android:fillColor="#4A6E86" android:pathData="M208,96h44v30h-44z" />
+        <path android:fillColor="#E8E8EC" android:pathData="M264,96h16v30h-16z" />
+    </group>
+</vector>
