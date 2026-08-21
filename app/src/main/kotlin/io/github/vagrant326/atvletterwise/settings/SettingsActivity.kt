@@ -18,6 +18,7 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import io.github.vagrant326.atvletterwise.BuildConfig
+import io.github.vagrant326.atvletterwise.model.Language
 import io.github.vagrant326.atvletterwise.update.UpdateActivity
 
 /**
@@ -48,7 +49,9 @@ class SettingsActivity : Activity() {
 
         content.addView(sectionLabel("Keyboard"))
         content.addView(hintModeRow())
-        content.addView(languageSetRow())
+        content.addView(sectionLabel("Languages"))
+        content.addView(languageRows())
+        content.addView(sectionLabel("System"))
         content.addView(
             navigationRow("Android keyboard settings") {
                 startActivity(Intent(Settings.ACTION_INPUT_METHOD_SETTINGS))
@@ -165,17 +168,35 @@ class SettingsActivity : Activity() {
         }
     }
 
-    private fun languageSetRow(): View {
-        lateinit var control: LinearLayout
-        lateinit var value: TextView
+    /**
+     * One row per language rather than a list of allowed combinations. Combinations grow
+     * exponentially with the number of languages and each one would need a name; checkboxes
+     * grow by one row.
+     */
+    private fun languageRows(): View {
+        val container = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        val note = caption("The * key cycles through the ones you tick, in this order.")
 
-        control = row("Languages on the * key", preferences.languageSet.label) {
-            preferences.languageSet = preferences.languageSet.next()
-            value.text = preferences.languageSet.label
+        for (language in Language.entries) {
+            lateinit var control: LinearLayout
+            lateinit var mark: TextView
+
+            control = row(language.title, checkbox(preferences.isEnabled(language))) {
+                if (preferences.toggle(language)) {
+                    mark.text = checkbox(preferences.isEnabled(language))
+                    note.text = "The * key cycles through the ones you tick, in this order."
+                } else {
+                    note.text = "At least one language has to stay on."
+                }
+            }
+            mark = control.getChildAt(1) as TextView
+            container.addView(control)
         }
-        value = control.getChildAt(1) as TextView
-        return control
+        container.addView(note)
+        return container
     }
+
+    private fun checkbox(checked: Boolean) = if (checked) "☑" else "☐"
 
     /**
      * Visually distinct from the setting rows above, because it does something categorically

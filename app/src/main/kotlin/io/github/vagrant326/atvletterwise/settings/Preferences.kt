@@ -22,23 +22,6 @@ enum class HintMode(val label: String, val description: String) {
     fun next(): HintMode = entries[(ordinal + 1) % entries.size]
 }
 
-/**
- * Which languages the `*` key cycles through.
- *
- * Cycling only works while the list is short — the user has to be able to predict where two
- * presses land. At eighteen languages a cycling key is useless and the long-press list
- * becomes the only usable route, so the set is the user's choice rather than everything the
- * app happens to support.
- */
-enum class LanguageSet(val label: String, val languages: List<Language>) {
-    PL_EN("PL + EN", listOf(Language.PL, Language.EN)),
-    PL_ONLY("PL only", listOf(Language.PL)),
-    EN_ONLY("EN only", listOf(Language.EN)),
-    ;
-
-    fun next(): LanguageSet = entries[(ordinal + 1) % entries.size]
-}
-
 class Preferences(context: Context) {
 
     private val store = context.getSharedPreferences(NAME, Context.MODE_PRIVATE)
@@ -53,29 +36,60 @@ class Preferences(context: Context) {
             ?: HintMode.KEYPAD
         set(value) = store.edit().putString(KEY_HINT_MODE, value.name).apply()
 
-    var languageSet: LanguageSet
-        get() = store.getString(KEY_LANGUAGE_SET, null)
-            ?.let { stored -> LanguageSet.entries.firstOrNull { it.name == stored } }
-            ?: LanguageSet.PL_EN
+    /**
+     * Which languages the `*` key cycles through, stored per language rather than as a set
+     * of allowed combinations — the combinations grow exponentially with the number of
+     * languages supported, and each one would need naming.
+     *
+     * Order follows [Language] declaration order so two presses always land in the same
+     * place. Never empty: a keyboard with no language cannot predict anything.
+     */
+    var enabledLanguages: List<Language>
+        get() {
+            val stored = store.getStringSet(KEY_ENABLED_LANGUAGES, null)
+                ?: return listOf(Language.PL, Language.EN)
+            val enabled = Language.entries.filter { it.name in stored }
+            return enabled.ifEmpty { listOf(Language.entries.first()) }
+        }
         set(value) {
-            store.edit().putString(KEY_LANGUAGE_SET, value.name).apply()
-            if (activeLanguage !in value.languages) {
-                activeLanguage = value.languages.first()
+            val kept = value.ifEmpty { listOf(Language.entries.first()) }
+            store.edit().putStringSet(KEY_ENABLED_LANGUAGES, kept.map { it.name }.toSet()).apply()
+            if (activeLanguage !in kept) {
+                activeLanguage = kept.first()
             }
         }
+
+    fun isEnabled(language: Language): Boolean = language in enabledLanguages
+
+    /**
+     * Toggles one language. Refuses to remove the last one and reports whether it did
+     * anything, so the caller can say why nothing happened rather than looking broken.
+     */
+    fun toggle(language: Language): Boolean {
+        val current = enabledLanguages
+        if (language in current) {
+            if (current.size == 1) {
+                return false
+            }
+            enabledLanguages = current - language
+        } else {
+            enabledLanguages = current + language
+        }
+        return true
+    }
 
     /** Survives restarts: the language is a mode, and a mode that silently resets is a trap. */
     var activeLanguage: Language
         get() = store.getString(KEY_ACTIVE_LANGUAGE, null)
             ?.let { stored -> Language.entries.firstOrNull { it.name == stored } }
-            ?.takeIf { it in languageSet.languages }
-            ?: languageSet.languages.first()
+            ?.takeIf { it in enabledLanguages }
+            ?: enabledLanguages.first()
         set(value) = store.edit().putString(KEY_ACTIVE_LANGUAGE, value.name).apply()
 
     private companion object {
         const val NAME = "letterwise"
         const val KEY_HINT_MODE = "hint_mode"
-        const val KEY_LANGUAGE_SET = "language_set"
+        const val KEY_ENABLED_LANGUAGES = "enabled_languages"
         const val KEY_ACTIVE_LANGUAGE = "active_language"
     }
 }

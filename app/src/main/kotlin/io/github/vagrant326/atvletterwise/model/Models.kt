@@ -4,9 +4,9 @@ import android.content.Context
 import io.github.vagrant326.atvletterwise.core.NgramModel
 import io.github.vagrant326.atvletterwise.core.UniformModel
 
-enum class Language(val code: String, val label: String) {
-    PL("pl", "PL"),
-    EN("en", "EN"),
+enum class Language(val code: String, val label: String, val title: String) {
+    PL("pl", "PL", "Polski"),
+    EN("en", "EN", "English"),
 }
 
 /**

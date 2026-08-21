@@ -48,7 +48,7 @@ class LetterWiseImeService : InputMethodService() {
         punctuationIndex = -1
         showLanguageChooser = false
         // The set may have changed in settings while the keyboard was down.
-        if (language !in preferences.languageSet.languages) {
+        if (language !in preferences.enabledLanguages) {
             language = preferences.activeLanguage
             composer.useDisambiguator(disambiguatorFor(language))
         }
@@ -133,7 +133,7 @@ class LetterWiseImeService : InputMethodService() {
      * give a route that still works when it is not.
      */
     private fun nextLanguage() {
-        val enabled = preferences.languageSet.languages
+        val enabled = preferences.enabledLanguages
         if (enabled.size > 1) {
             val index = enabled.indexOf(language)
             language = enabled[(index + 1) % enabled.size]
@@ -171,7 +171,7 @@ class LetterWiseImeService : InputMethodService() {
                 composer = composer,
                 partition = partition,
                 language = language,
-                enabledLanguages = preferences.languageSet.languages,
+                enabledLanguages = preferences.enabledLanguages,
                 trained = models.isTrained(language),
                 hintMode = preferences.hintMode,
                 showLanguageChooser = showLanguageChooser,
