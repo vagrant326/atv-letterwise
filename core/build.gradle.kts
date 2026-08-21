@@ -40,40 +40,25 @@ tasks.register<JavaExec>("bench") {
 /**
  * Searches for a better letter-to-key assignment. Searches on training text and scores on the
  * query corpus, so the reported figure is not a measurement of overfitting.
+ *
+ * Which training text matters more than it looks: a layout tuned on dialogue loses to plain
+ * ITU on real queries, while one tuned on titles does not. `-Pon=titles` switches.
  */
 tasks.register<JavaExec>("optimise") {
     group = "verification"
-    description = "Compares ITU against searched layouts. Pass -Planguage=pl for Polish."
+    description = "Compares ITU against searched layouts. -Planguage=pl, -Pon=titles."
     mainClass.set("io.github.vagrant326.atvletterwise.core.bench.OptimiseKt")
     classpath = sourceSets["test"].runtimeClasspath
     workingDir = rootProject.projectDir
     maxHeapSize = "2g"
     val language = providers.gradleProperty("language").orElse("en")
+    val on = providers.gradleProperty("on").orElse("subtitles")
     argumentProviders.add {
         val chosen = language.get()
         listOf(
             "--language", chosen,
             "--model", "app/src/main/assets/trigrams-$chosen.bin",
-            "--train", "corpus/raw/subtitles-$chosen.txt",
-            "--queries", "bench/queries-v1.tsv",
-        )
-    }
-}
-
-tasks.register<JavaExec>("optimiseTitles") {
-    group = "verification"
-    description = "Same search, trained on title text rather than dialogue."
-    mainClass.set("io.github.vagrant326.atvletterwise.core.bench.OptimiseKt")
-    classpath = sourceSets["test"].runtimeClasspath
-    workingDir = rootProject.projectDir
-    maxHeapSize = "2g"
-    val language = providers.gradleProperty("language").orElse("en")
-    argumentProviders.add {
-        val chosen = language.get()
-        listOf(
-            "--language", chosen,
-            "--model", "app/src/main/assets/trigrams-$chosen.bin",
-            "--train", "corpus/raw/titles-$chosen.txt",
+            "--train", "corpus/raw/${on.get()}-$chosen.txt",
             "--queries", "bench/queries-v1.tsv",
         )
     }

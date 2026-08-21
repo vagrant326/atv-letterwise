@@ -36,7 +36,7 @@ DEFAULT_ASSETS = os.path.join(HERE, os.pardir, "app", "src", "main", "assets")
 MAGIC = b"LWM1"
 
 
-def count(language: str, order: int, raw: str) -> list[list[int]]:
+def count(language: str, order: int, raw: str, title_weight: int) -> list[list[int]]:
     """One flat count array per order, from 1 (unigram) up to `order`."""
     alphabet = ALPHABETS[language]
     index = {symbol: position for position, symbol in enumerate(alphabet)}
@@ -53,24 +53,32 @@ def count(language: str, order: int, raw: str) -> list[list[int]]:
 
     characters = 0
     for path in sources:
+        # Titles are a few percent of the text but the whole workload. Left at their natural
+        # share they do not move the counts at all, which is measurable: adding them changed
+        # nothing. The weight is how the domain mix gets set deliberately rather than by
+        # whatever the download happened to contain.
+        # startswith, not `in`: "titles-" is a substring of "subtitles-", so the obvious
+        # containment test weighted the entire corpus uniformly - which changes no ratio and
+        # therefore no ranking, and looked exactly like the domain mix not mattering.
+        weight = title_weight if os.path.basename(path).startswith("titles-") else 1
         with open(path, encoding="utf-8") as handle:
             for line in handle:
                 # Every line is a sentence or a title, so it starts after a word boundary.
                 # Prefixing a space lets the model learn which letters begin a word.
                 text = " " + line.rstrip("\n")
                 positions = [index[character] for character in text if character in index]
-                characters += len(positions)
+                characters += len(positions) * weight
                 for at, symbol in enumerate(positions):
                     offset = symbol
-                    tables[0][offset] += 1
+                    tables[0][offset] += weight
                     stride = size
                     for k in range(1, order):
                         if at - k < 0:
                             break
                         offset += positions[at - k] * stride
                         stride *= size
-                        tables[k][offset] += 1
-    print(f"{language}: {characters} characters from {len(sources)} files", file=sys.stderr)
+                        tables[k][offset] += weight
+    print(f"{language}: {characters} weighted characters from {len(sources)} files", file=sys.stderr)
     return tables
 
 
@@ -98,12 +106,20 @@ def main() -> int:
     parser.add_argument("--order", type=int, default=3)
     parser.add_argument("--raw", default=DEFAULT_RAW, help="directory of normalised text")
     parser.add_argument("--out", default=DEFAULT_ASSETS, help="where to write the table")
+    parser.add_argument(
+        "--title-weight",
+        type=int,
+        default=1,
+        help="how many times title text counts, to set the domain mix deliberately",
+    )
     arguments = parser.parse_args()
 
     if arguments.order < 1 or arguments.order > 4:
         raise SystemExit("order must be between 1 and 4")
 
-    tables = count(arguments.language, arguments.order, arguments.raw)
+    tables = count(
+        arguments.language, arguments.order, arguments.raw, arguments.title_weight
+    )
     write(arguments.language, arguments.order, tables, arguments.out)
     return 0
 
