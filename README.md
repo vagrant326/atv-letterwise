@@ -80,6 +80,17 @@ The `core` module is plain Kotlin with no Android dependencies, on purpose: the 
 and the shipped IME call the same disambiguation code, so a KSPC measured on a laptop is
 the KSPC that ships.
 
+## Branching
+
+| Branch | What runs |
+|---|---|
+| `develop`, `feature/**`, `fix/**`, pull requests | CI — tests, lint, debug APK artifact |
+| `main` | Release — raises the version, signs, publishes to Releases |
+
+**A push to `main` is a release.** There is no separate tagging step: the next version is
+computed from the highest existing tag and raised by a patch. For a minor or major bump,
+run the Release workflow manually from the Actions tab and choose the level.
+
 ## Installing
 
 Grab the APK from [Releases](https://github.com/vagrant326/atv-letterwise/releases) and
