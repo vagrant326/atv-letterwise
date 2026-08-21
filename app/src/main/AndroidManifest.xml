@@ -62,18 +62,6 @@
             android:label="@string/update_name"
             android:process=":updater" />
 
-        <!-- Hands the downloaded APK to the system installer. Kept in the updater process
-             with the rest of the update machinery. -->
-        <provider
-            android:name="androidx.core.content.FileProvider"
-            android:authorities="${applicationId}.updates"
-            android:exported="false"
-            android:grantUriPermissions="true"
-            android:process=":updater">
-            <meta-data
-                android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/file_paths" />
-        </provider>
 
     </application>
 

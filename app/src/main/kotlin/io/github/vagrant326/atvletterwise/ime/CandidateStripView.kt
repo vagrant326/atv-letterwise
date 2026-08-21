@@ -10,6 +10,7 @@ import android.text.style.ForegroundColorSpan
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.KeyEvent
+import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -48,38 +49,48 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
         layoutParams = LayoutParams(dp(230), LayoutParams.WRAP_CONTENT)
     }
 
+    private val keypadCells = mutableMapOf<Char, TextView>()
+
+    private val languageValue = hintValue()
+    private val deleteValue = hintValue()
+
     /**
-     * The assigned language and delete keys, named rather than drawn into the grid, and set
-     * beside it rather than under it.
+     * The assigned keys, named rather than drawn into the grid, and set beside it.
      *
      * Named because the grid mirrors the physical numpad and a key printed `TEXT` does not sit
      * where a phone has `*` — putting it in that cell would lie about where to reach for it.
-     * Beside because the grid is three cells wide and the space to its right is already going
-     * spare, while vertical space is what the search results underneath are short of.
+     * Beside because the grid is three cells wide and the space to its right was already going
+     * spare, while vertical space is what the results underneath are short of.
      */
-    private val assignedKeys = TextView(context).apply {
-        setTextColor(DIM)
-        setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
-        setLineSpacing(0f, 1.25f)
-        setPadding(dp(16), dp(4), 0, 0)
+    private val hints = LinearLayout(context).apply {
+        orientation = VERTICAL
+        setPadding(dp(20), 0, 0, 0)
         layoutParams = LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f).apply {
             gravity = Gravity.TOP
+            topMargin = dp(2)
         }
+        addView(hintLine("language", languageValue))
+        addView(hintLine("delete", deleteValue))
+        addView(hintLine("caret", hintValue().apply { text = "left / right" }))
+        addView(hintLine("submit", hintValue().apply { text = "centre" }))
     }
 
+    /**
+     * A weighted spacer mirroring [hints] keeps the grid centred while the hints sit to its
+     * right. Without it the grid is pushed left by whatever is beside it.
+     */
     private val hintRow = LinearLayout(context).apply {
         orientation = HORIZONTAL
         layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT)
+        addView(View(context).apply { layoutParams = LayoutParams(0, 1, 1f) })
         addView(keypad)
-        addView(assignedKeys)
+        addView(hints)
     }
-
-    private val keypadCells = mutableMapOf<Char, TextView>()
 
     init {
         orientation = VERTICAL
         setBackgroundColor(BACKGROUND)
-        setPadding(dp(12), dp(6), dp(12), dp(8))
+        setPadding(dp(12), dp(8), dp(12), dp(8))
         addView(candidateRow)
         addView(inlineHint)
         addView(hintRow)
@@ -101,15 +112,8 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
                 .joinToString("   ") { "${it.key}:${it.value}" } + "   0:space"
         }
         if (keypadVisible) {
-            assignedKeys.text = buildString {
-                append("language   ").append(keyLabel(state.customKeys.language, "hold 1"))
-                append('\n')
-                append("delete     ").append(keyLabel(state.customKeys.delete, "hold left"))
-                append('\n')
-                append("caret      left / right")
-                append('\n')
-                append("submit     centre")
-            }
+            languageValue.text = keyLabel(state.customKeys.language, "hold 1")
+            deleteValue.text = keyLabel(state.customKeys.delete, "hold left")
         }
 
         // Highlight the group the current alternatives came from, so the keypad reads as
@@ -126,6 +130,30 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
         } else {
             KeyEvent.keyCodeToString(keyCode).removePrefix("KEYCODE_")
         }
+
+    /** Two columns, so the values line up instead of drifting with label length. */
+    private fun hintLine(label: String, value: TextView) = LinearLayout(context).apply {
+        orientation = HORIZONTAL
+        layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT)
+            .apply { topMargin = dp(3) }
+        addView(
+            TextView(context).apply {
+                text = label
+                setTextColor(MUTED)
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+                layoutParams = LayoutParams(dp(66), LayoutParams.WRAP_CONTENT)
+            }
+        )
+        addView(value)
+    }
+
+    private fun hintValue() = TextView(context).apply {
+        setTextColor(DIM)
+        setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+        isSingleLine = true
+        ellipsize = TextUtils.TruncateAt.END
+        layoutParams = LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f)
+    }
 
     private fun candidateRow(state: StripState): CharSequence {
         if (state.showLanguageChooser) {
@@ -206,7 +234,7 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
             layoutParams = LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
                 marginStart = dp(2)
                 marginEnd = dp(2)
-                topMargin = dp(2)
+                topMargin = dp(3)
             }
             if (key != ' ') {
                 setBackgroundColor(CELL)
@@ -221,6 +249,7 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
         const val BACKGROUND = 0xF0101014.toInt()
         const val FOREGROUND = 0xFFE8E8EC.toInt()
         const val DIM = 0xFF80808C.toInt()
+        const val MUTED = 0xFF6B6B78.toInt()
         const val ACCENT = 0xFF7FD1FF.toInt()
         const val CELL = 0xFF1A1A22.toInt()
     }
