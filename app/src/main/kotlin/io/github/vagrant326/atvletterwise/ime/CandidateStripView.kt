@@ -9,6 +9,8 @@ import android.text.TextUtils
 import android.text.style.ForegroundColorSpan
 import android.util.TypedValue
 import android.view.Gravity
+import android.view.KeyEvent
+import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
 import io.github.vagrant326.atvletterwise.core.Partition
@@ -41,7 +43,36 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
         ellipsize = TextUtils.TruncateAt.END
     }
 
-    private val keypad = LinearLayout(context).apply { orientation = VERTICAL }
+    private val keypad = LinearLayout(context).apply {
+        orientation = VERTICAL
+        layoutParams = LayoutParams(dp(230), LayoutParams.WRAP_CONTENT)
+    }
+
+    /**
+     * The assigned language and delete keys, named rather than drawn into the grid, and set
+     * beside it rather than under it.
+     *
+     * Named because the grid mirrors the physical numpad and a key printed `TEXT` does not sit
+     * where a phone has `*` — putting it in that cell would lie about where to reach for it.
+     * Beside because the grid is three cells wide and the space to its right is already going
+     * spare, while vertical space is what the search results underneath are short of.
+     */
+    private val assignedKeys = TextView(context).apply {
+        setTextColor(DIM)
+        setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+        setLineSpacing(0f, 1.25f)
+        setPadding(dp(16), dp(4), 0, 0)
+        layoutParams = LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f).apply {
+            gravity = Gravity.TOP
+        }
+    }
+
+    private val hintRow = LinearLayout(context).apply {
+        orientation = HORIZONTAL
+        layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT)
+        addView(keypad)
+        addView(assignedKeys)
+    }
 
     private val keypadCells = mutableMapOf<Char, TextView>()
 
@@ -51,7 +82,7 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
         setPadding(dp(12), dp(6), dp(12), dp(8))
         addView(candidateRow)
         addView(inlineHint)
-        addView(keypad)
+        addView(hintRow)
     }
 
     fun update(state: StripState) {
@@ -60,24 +91,41 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
         if (keypad.childCount == 0) {
             buildKeypad(state.partition)
         }
-        keypad.visibility = if (state.hintMode == HintMode.KEYPAD) VISIBLE else GONE
+        val keypadVisible = state.hintMode == HintMode.KEYPAD
+        hintRow.visibility = if (keypadVisible) VISIBLE else GONE
         inlineHint.visibility = if (state.hintMode == HintMode.INLINE) VISIBLE else GONE
+
         if (state.hintMode == HintMode.INLINE) {
             inlineHint.text = state.partition.groups.entries
                 .sortedBy { it.key }
-                .joinToString("   ") { "${it.key}:${it.value}" } + "   0:space   *:lang"
+                .joinToString("   ") { "${it.key}:${it.value}" } + "   0:space"
         }
-
-        keypadCells['*']?.text = "*\n${state.language.label.lowercase()}"
+        if (keypadVisible) {
+            assignedKeys.text = buildString {
+                append("language   ").append(keyLabel(state.customKeys.language, "hold 1"))
+                append('\n')
+                append("delete     ").append(keyLabel(state.customKeys.delete, "hold left"))
+                append('\n')
+                append("caret      left / right")
+                append('\n')
+                append("submit     centre")
+            }
+        }
 
         // Highlight the group the current alternatives came from, so the keypad reads as
         // part of what is happening rather than as a static wall of text.
         val active = state.composer.alternatives.firstOrNull()?.let { state.partition.keyFor(it) }
         for ((key, cell) in keypadCells) {
-            val highlighted = key == active || (key == '*' && state.showLanguageChooser)
-            cell.setTextColor(if (highlighted) ACCENT else DIM)
+            cell.setTextColor(if (key == active) ACCENT else DIM)
         }
     }
+
+    private fun keyLabel(keyCode: Int, fallback: String): String =
+        if (keyCode == KeyBindings.NO_KEY) {
+            fallback
+        } else {
+            KeyEvent.keyCodeToString(keyCode).removePrefix("KEYCODE_")
+        }
 
     private fun candidateRow(state: StripState): CharSequence {
         if (state.showLanguageChooser) {
@@ -94,7 +142,7 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
                 )
             }
             val hint = text.length
-            text.append("press * again")
+            text.append("up / down")
             text.setSpan(ForegroundColorSpan(DIM), hint, text.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
             return text
         }
@@ -124,10 +172,16 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
         return text
     }
 
-    /** Phone and remote layout: 123 / 456 / 789 / *0# — the shape already in the fingers. */
+    /**
+     * The physical numpad: 123 / 456 / 789 / 0. No `*` or `#` row — this is not a phone and
+     * those keys are not on every remote, so drawing them promises buttons that may not exist.
+     */
     private fun buildKeypad(partition: Partition) {
-        for (row in listOf("123", "456", "789", "*0#")) {
-            val line = LinearLayout(context).apply { orientation = HORIZONTAL }
+        for (row in listOf("123", "456", "789", " 0 ")) {
+            val line = LinearLayout(context).apply {
+                orientation = HORIZONTAL
+                layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT)
+            }
             for (key in row) {
                 line.addView(cell(key, partition))
             }
@@ -137,25 +191,26 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
 
     private fun cell(key: Char, partition: Partition): TextView {
         val letters = when (key) {
-            '*' -> "lang"
-            '#' -> ""
+            ' ' -> ""
             '0' -> "space"
             '1' -> ".,-"
             else -> partition.symbolsFor(key)
         }
         return TextView(context).apply {
-            text = "$key\n$letters"
+            text = if (key == ' ') "" else "$key\n$letters"
             setTextColor(DIM)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
             gravity = Gravity.CENTER
             setLineSpacing(0f, 0.95f)
             setPadding(dp(2), dp(3), dp(2), dp(3))
-            layoutParams = LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f).apply {
+            layoutParams = LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
                 marginStart = dp(2)
                 marginEnd = dp(2)
                 topMargin = dp(2)
             }
-            setBackgroundColor(if (key == '#') BACKGROUND else CELL)
+            if (key != ' ') {
+                setBackgroundColor(CELL)
+            }
             keypadCells[key] = this
         }
     }

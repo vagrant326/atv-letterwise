@@ -221,6 +221,7 @@ class LetterWiseImeService : InputMethodService() {
                 trained = models.isTrained(language),
                 hintMode = preferences.hintMode,
                 showLanguageChooser = showLanguageChooser,
+                customKeys = preferences.customKeys,
             )
         )
     }

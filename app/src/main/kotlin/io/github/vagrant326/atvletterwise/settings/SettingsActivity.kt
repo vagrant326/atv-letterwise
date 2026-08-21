@@ -188,7 +188,7 @@ class SettingsActivity : Activity() {
      */
     private fun languageRows(): View {
         val container = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        val note = caption("The * key cycles through the ones you tick, in this order.")
+        val note = caption(LANGUAGE_NOTE)
 
         for (language in Language.entries) {
             lateinit var control: LinearLayout
@@ -197,7 +197,7 @@ class SettingsActivity : Activity() {
             control = row(language.title, checkbox(preferences.isEnabled(language))) {
                 if (preferences.toggle(language)) {
                     mark.text = checkbox(preferences.isEnabled(language))
-                    note.text = "The * key cycles through the ones you tick, in this order."
+                    note.text = LANGUAGE_NOTE
                 } else {
                     note.text = "At least one language has to stay on."
                 }
@@ -211,15 +211,43 @@ class SettingsActivity : Activity() {
 
     private fun checkbox(checked: Boolean) = if (checked) "☑" else "☐"
 
+    /**
+     * Clearing lives here rather than on the capture screen: that screen has no focusable
+     * views on purpose, because focus navigation and raw key capture cannot share a screen.
+     */
     private fun captureRow(binding: Binding): View {
-        val code = preferences.keyCodeFor(binding)
-        val value = if (code == KeyBindings.NO_KEY) "not set" else KeyEvent.keyCodeToString(code)
-        return navigationRow("${binding.title}: $value") {
+        val container = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        lateinit var clear: View
+
+        fun label(): String {
+            val code = preferences.keyCodeFor(binding)
+            val value = if (code == KeyBindings.NO_KEY) {
+                "not set"
+            } else {
+                KeyEvent.keyCodeToString(code).removePrefix("KEYCODE_")
+            }
+            return "${binding.title}: $value"
+        }
+
+        val open = navigationRow(label()) {
             startActivity(
                 Intent(this, KeyCaptureActivity::class.java)
                     .putExtra(KeyCaptureActivity.EXTRA_BINDING, binding.name)
             )
         }
+        val title = open.getChildAt(0) as TextView
+
+        clear = row("Clear ${binding.title.lowercase()}", "") {
+            preferences.assign(binding, KeyBindings.NO_KEY)
+            title.text = label()
+            clear.visibility = View.GONE
+        }
+        clear.visibility =
+            if (preferences.keyCodeFor(binding) == KeyBindings.NO_KEY) View.GONE else View.VISIBLE
+
+        container.addView(open)
+        container.addView(clear)
+        return container
     }
 
     /**
@@ -318,6 +346,9 @@ class SettingsActivity : Activity() {
     private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
 
     private companion object {
+        const val LANGUAGE_NOTE =
+            "The language button cycles through the ones you tick, in this order."
+
         const val BACKGROUND = 0xFF08080B.toInt()
         const val ROW = 0xFF16161C.toInt()
         const val ROW_FOCUSED = 0xFF2A3A46.toInt()

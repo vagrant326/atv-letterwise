@@ -14,4 +14,5 @@ data class StripState(
     val trained: Boolean,
     val hintMode: HintMode,
     val showLanguageChooser: Boolean,
+    val customKeys: CustomKeys,
 )
