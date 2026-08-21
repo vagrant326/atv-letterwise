@@ -30,13 +30,13 @@ import sys
 from alphabet import ALPHABETS
 
 HERE = os.path.dirname(__file__)
-RAW = os.path.join(HERE, "raw")
-ASSETS = os.path.join(HERE, os.pardir, "app", "src", "main", "assets")
+DEFAULT_RAW = os.path.join(HERE, "raw")
+DEFAULT_ASSETS = os.path.join(HERE, os.pardir, "app", "src", "main", "assets")
 
 MAGIC = b"LWM1"
 
 
-def count(language: str, order: int) -> list[list[int]]:
+def count(language: str, order: int, raw: str) -> list[list[int]]:
     """One flat count array per order, from 1 (unigram) up to `order`."""
     alphabet = ALPHABETS[language]
     index = {symbol: position for position, symbol in enumerate(alphabet)}
@@ -44,8 +44,8 @@ def count(language: str, order: int) -> list[list[int]]:
     tables = [[0] * (size ** k) for k in range(1, order + 1)]
 
     sources = sorted(
-        os.path.join(RAW, name)
-        for name in os.listdir(RAW)
+        os.path.join(raw, name)
+        for name in os.listdir(raw)
         if name.endswith(f"-{language}.txt")
     )
     if not sources:
@@ -74,10 +74,10 @@ def count(language: str, order: int) -> list[list[int]]:
     return tables
 
 
-def write(language: str, order: int, tables: list[list[int]]) -> str:
+def write(language: str, order: int, tables: list[list[int]], out: str) -> str:
     alphabet = ALPHABETS[language]
-    os.makedirs(ASSETS, exist_ok=True)
-    target = os.path.join(ASSETS, f"trigrams-{language}.bin")
+    os.makedirs(out, exist_ok=True)
+    target = os.path.join(out, f"trigrams-{language}.bin")
 
     with open(target, "wb") as out:
         out.write(MAGIC)
@@ -96,13 +96,15 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--language", choices=("pl", "en"), required=True)
     parser.add_argument("--order", type=int, default=3)
+    parser.add_argument("--raw", default=DEFAULT_RAW, help="directory of normalised text")
+    parser.add_argument("--out", default=DEFAULT_ASSETS, help="where to write the table")
     arguments = parser.parse_args()
 
     if arguments.order < 1 or arguments.order > 4:
         raise SystemExit("order must be between 1 and 4")
 
-    tables = count(arguments.language, arguments.order)
-    write(arguments.language, arguments.order, tables)
+    tables = count(arguments.language, arguments.order, arguments.raw)
+    write(arguments.language, arguments.order, tables, arguments.out)
     return 0
 
 
