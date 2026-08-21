@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Only the updater process uses this. See UpdateActivity and the README. -->
+    <!-- Both are used only by the updater process, never by the IME. See UpdateActivity
+         and the README. They exist because sideloading has no update channel; they come
+         out if this ever ships through a store. -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <uses-feature
         android:name="android.software.leanback"
@@ -53,6 +56,19 @@
             android:exported="true"
             android:label="@string/update_name"
             android:process=":updater" />
+
+        <!-- Hands the downloaded APK to the system installer. Kept in the updater process
+             with the rest of the update machinery. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.updates"
+            android:exported="false"
+            android:grantUriPermissions="true"
+            android:process=":updater">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
 
     </application>
 

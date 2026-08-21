@@ -59,4 +59,6 @@ kotlin {
 
 dependencies {
     implementation(project(":core"))
+    // FileProvider only, to hand the downloaded APK to the system installer.
+    implementation(libs.androidx.core)
 }

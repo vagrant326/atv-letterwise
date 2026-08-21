@@ -46,27 +46,39 @@ Both Polish and English are supported, as two trigram tables rather than two
 dictionaries. Anything is typable: proper nouns, film titles, invented words, passwords.
 A word the model has never seen costs extra presses, never a dead end.
 
-## The `INTERNET` permission, and why a keyboard has one
+## Updating
 
-**A keyboard with network access is a legitimate thing to be suspicious of.** An IME sees
-every password and every card number typed on the device. This one has `INTERNET` because
-it is distributed by sideloading rather than through the Play Store, so it has no other
-way to tell you an update exists.
+Settings → Check for updates. It compares the installed version against the latest
+release, downloads the APK and hands it to the system installer. The first time, Android
+will ask you to allow this app to install packages; the screen links straight there.
 
-What that permission is allowed to do here:
+Nothing checks on its own — no background job, no boot receiver, no poll on keyboard start.
+It happens when you press the button and not otherwise.
 
-- **The IME process never opens a socket.** The update check lives in the settings
-  activity, in a separate process (`:updater`). The component that handles your
-  keystrokes contains no networking code at all.
-- **It runs only when you press "check for updates".** No background job, no boot
-  receiver, no periodic poll, no check when the keyboard starts.
-- **One request, no payload.** A `GET` to this repository's GitHub releases endpoint.
-  No device identifier, no version histogram, no analytics, no crash reporting.
-- **Nothing you type ever leaves the device.** There is no telemetry path in this
-  codebase and there will not be one.
+## The `INTERNET` and `REQUEST_INSTALL_PACKAGES` permissions, and why a keyboard has them
 
-This comes out if the project ever gets a Play Store listing. Until then the code is
-small enough to check by reading it, which is the point.
+**A keyboard that can reach the network and install packages is a legitimate thing to be
+suspicious of.** An IME sees every password and every card number typed on the device. This
+one holds both permissions because it is distributed by sideloading rather than through a
+store, so it has no other way to update itself.
+
+What they are allowed to do here:
+
+- **The IME process never opens a socket and never installs anything.** All of it lives in
+  a separate process (`:updater`) — the update activity and the `FileProvider` that hands
+  the APK over. The component handling your keystrokes contains none of that code.
+- **Nothing runs unless you press a button.** No background job, no boot receiver, no
+  periodic poll, no check when the keyboard starts.
+- **Two requests, no payload.** One `GET` for the latest release tag, one for the APK. No
+  device identifier, no version histogram, no analytics, no crash reporting.
+- **Nothing you type ever leaves the device.** There is no telemetry path in this codebase
+  and there will not be one.
+- **The APK is fetched from this repository's releases and installed through the system
+  installer**, which shows you what is being installed and by whom. Nothing is installed
+  silently, and it cannot be.
+
+Both come out if the project ever gets a store listing. Until then the code is small enough
+to check by reading it, which is the point.
 
 ## Building
 
