@@ -87,11 +87,51 @@ jobs:
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
+          set -eu
           if [ -z "$KEYSTORE_BASE64" ]; then
             echo "::error::KEYSTORE_BASE64 is not set. See docs/release-and-signing.md"
             exit 1
           fi
-          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          # Strip whitespace before decoding: pasting into the secrets UI can introduce
+          # line breaks, and base64 -d treats those as corruption.
+          printf '%s' "$KEYSTORE_BASE64" | tr -d '[:space:]' | base64 -d > "$RUNNER_TEMP/release.jks"
+
+      # Gradle reports every one of these as "keystore password was incorrect", which
+      # sends you looking in the wrong place. Separate them here, before Gradle runs.
+      # The SHA-256 is safe to print - it is a hash, not the key - and it settles whether
+      # the base64 survived the trip through the secrets UI.
+      - name: Validate keystore and credentials
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          set -u
+          KS="$RUNNER_TEMP/release.jks"
+          echo "decoded size: $(wc -c < "$KS") bytes"
+          echo "sha256:       $(sha256sum "$KS" | cut -d' ' -f1)"
+          echo "expected:     573d49d428d778a9e3ed61b31ca0f3ea8414a3cba11c6a434b89d1636f4d119b"
+
+          if ! keytool -list -keystore "$KS" -storepass "$KEYSTORE_PASSWORD" > /tmp/entries 2>/tmp/err; then
+            echo "::error::Cannot open the keystore. KEYSTORE_PASSWORD is wrong, or the decoded file is not a keystore."
+            sed -e "s/$KEYSTORE_PASSWORD/[redacted]/g" /tmp/err || true
+            exit 1
+          fi
+          echo "keystore opened, entries:"
+          grep -E '^[^ ].*,' /tmp/entries || true
+
+          if ! grep -qi "^$KEY_ALIAS," /tmp/entries; then
+            echo "::error::KEY_ALIAS is not an entry in this keystore. See the alias listed above."
+            exit 1
+          fi
+
+          if ! keytool -list -keystore "$KS" -storepass "$KEYSTORE_PASSWORD" \
+                 -alias "$KEY_ALIAS" -keypass "$KEY_PASSWORD" > /dev/null 2>/tmp/err2; then
+            echo "::error::KEY_PASSWORD is wrong for this alias. In PKCS12 it must equal KEYSTORE_PASSWORD."
+            sed -e "s/$KEY_PASSWORD/[redacted]/g" /tmp/err2 || true
+            exit 1
+          fi
+          echo "credentials verified"
 
       - name: Assemble release
         env:
