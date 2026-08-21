@@ -167,7 +167,13 @@ jobs:
           set -eu
           APK=$(find app/build/outputs/apk/release -name '*.apk' | head -1)
           if [ -z "$APK" ]; then echo "::error::No release APK produced"; exit 1; fi
-          RENAMED="atv-letterwise-${{ steps.v.outputs.name }}.apk"
+          # Constant filename, deliberately without the version in it. That is what makes
+          # https://github.com/vagrant326/atv-letterwise/releases/latest/download/atv-letterwise.apk
+          # a permanent address for the newest build, so the downloader app on the TV can
+          # keep one bookmark forever. A versioned name would break that URL every release,
+          # and a moving "latest" tag would mean force-moving a tag and republishing an
+          # asset on every release instead.
+          RENAMED="atv-letterwise.apk"
           mv "$APK" "$RENAMED"
           echo "APK=$RENAMED" >> "$GITHUB_ENV"
           # Runners ship several build-tools versions, so an unquoted glob here expands to

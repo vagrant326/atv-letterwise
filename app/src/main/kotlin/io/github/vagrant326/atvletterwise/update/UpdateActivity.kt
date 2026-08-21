@@ -70,7 +70,7 @@ class UpdateActivity : Activity() {
                 "Installed $installed\nUp to date."
             } else {
                 "Installed $installed\nAvailable: ${outcome.tag}\n\n" +
-                    "Open $RELEASES_URL in a downloader app to install it."
+                    "Open this in a downloader app:\n$DOWNLOAD_URL"
             }
         }
     }
@@ -116,8 +116,10 @@ class UpdateActivity : Activity() {
     private companion object {
         const val API_URL =
             "https://api.github.com/repos/vagrant326/atv-letterwise/releases/latest"
-        const val RELEASES_URL =
-            "https://github.com/vagrant326/atv-letterwise/releases/latest"
+        // Stable forever: the asset name carries no version, so this always resolves to
+        // the newest release. One bookmark in the downloader app, never updated.
+        const val DOWNLOAD_URL =
+            "https://github.com/vagrant326/atv-letterwise/releases/latest/download/atv-letterwise.apk"
         const val TIMEOUT_MS = 10_000
         val TAG_NAME = """"tag_name"\s*:\s*"([^"]+)"""".toRegex()
     }

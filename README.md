@@ -93,9 +93,24 @@ run the Release workflow manually from the Actions tab and choose the level.
 
 ## Installing
 
-Grab the APK from [Releases](https://github.com/vagrant326/atv-letterwise/releases) and
-open the URL in a downloader app on the TV. Then Settings → System → Keyboard, select it,
-and enable it. Android requires that step manually for every IME.
+One address, permanently the newest build — bookmark it in the downloader app on the TV
+and never change it:
+
+```
+https://github.com/vagrant326/atv-letterwise/releases/latest/download/atv-letterwise.apk
+```
+
+The asset name deliberately carries no version number, which is what keeps that URL
+stable. The version lives in the release tag and in the app's own settings screen.
+[All releases](https://github.com/vagrant326/atv-letterwise/releases) are listed if you
+need a specific older one.
+
+Then Settings → System → Keyboard, select it, and enable it. Android requires that step
+manually for every IME.
+
+**If the keyboard ever leaves the TV unnavigable**, press `HOME` — an IME cannot intercept
+it — and switch keyboards or uninstall from there. A USB mouse also always works, because
+pointer events never reach the keyboard's key handling.
 
 ## Licence
 
