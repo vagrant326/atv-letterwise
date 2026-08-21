@@ -105,8 +105,10 @@ run the Release workflow manually from the Actions tab and choose the level.
 
 ## Installing
 
-Bookmark either of these in the downloader app on the TV. Both are permanent and both
-always serve the newest build:
+In the AFTVnews Downloader app, enter code **8662742**. Seven digits on the remote beats
+entering a URL with a grid keyboard, which is the problem this project exists to solve.
+
+Or use either address directly. Both are permanent and both always serve the newest build:
 
 ```
 https://github.com/vagrant326/atv-letterwise/releases/download/latest/atv-letterwise.apk
