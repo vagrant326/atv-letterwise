@@ -193,6 +193,19 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
             return text
         }
 
+        // Says so rather than looking broken: raised by the experimental trigger over an app
+        // that never asked for input, there is nowhere to send characters.
+        if (!state.hasEditor) {
+            val text = SpannableStringBuilder(context.getString(R.string.strip_no_editor))
+            text.setSpan(
+                ForegroundColorSpan(WARNING),
+                0,
+                text.length,
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
+            )
+            return text
+        }
+
         val tag = if (state.trained) {
             state.language.label
         } else {
@@ -273,6 +286,7 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
         const val DIM = 0xFF80808C.toInt()
         const val MUTED = 0xFF6B6B78.toInt()
         const val ACCENT = 0xFF7FD1FF.toInt()
+        const val WARNING = 0xFFEF9F27.toInt()
         const val CELL = 0xFF1A1A22.toInt()
     }
 }

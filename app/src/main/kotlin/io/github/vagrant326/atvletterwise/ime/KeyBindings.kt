@@ -26,7 +26,7 @@ sealed interface Action {
  * report. The user's `TEXT` key sits where a phone has `*` and reports keycode 300, well
  * outside the standard range — nothing in the app could have guessed that.
  */
-data class CustomKeys(val language: Int, val delete: Int)
+data class CustomKeys(val language: Int, val delete: Int, val trigger: Int)
 
 object KeyBindings {
 

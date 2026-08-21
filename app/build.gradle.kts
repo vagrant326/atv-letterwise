@@ -15,6 +15,31 @@ android {
         versionName = providers.gradleProperty("versionName").orNull ?: "0.0.0-dev"
     }
 
+    /**
+     * Two channels, and deliberately two *applications*. The dev build carries its own
+     * applicationId, so it installs alongside the released one instead of replacing it — which
+     * is the whole point: an experiment that takes over the d-pad has already cost this project
+     * a TV, and the way to try the next one is with a working keyboard still installed.
+     *
+     * Each channel updates from its own releases. The tag prefix is what keeps them apart.
+     */
+    flavorDimensions += "channel"
+    productFlavors {
+        create("prod") {
+            dimension = "channel"
+            buildConfigField("String", "RELEASE_TAG_PREFIX", "\"v\"")
+            buildConfigField("String", "RELEASE_ALIAS", "\"latest\"")
+            buildConfigField("String", "RELEASE_ASSET", "\"atv-letterwise.apk\"")
+        }
+        create("dev") {
+            dimension = "channel"
+            applicationIdSuffix = ".dev"
+            buildConfigField("String", "RELEASE_TAG_PREFIX", "\"dev-\"")
+            buildConfigField("String", "RELEASE_ALIAS", "\"latest-dev\"")
+            buildConfigField("String", "RELEASE_ASSET", "\"atv-letterwise-dev.apk\"")
+        }
+    }
+
     // Release signing comes from the environment so the keystore never touches the
     // repository. Absent locally, in which case release builds stay unsigned rather
     // than silently falling back to the debug key - a debug-signed APK will not install

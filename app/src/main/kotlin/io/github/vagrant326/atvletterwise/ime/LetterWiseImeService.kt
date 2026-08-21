@@ -1,6 +1,7 @@
 package io.github.vagrant326.atvletterwise.ime
 
 import android.inputmethodservice.InputMethodService
+import android.os.Build
 import android.view.KeyEvent
 import android.view.View
 import android.view.inputmethod.EditorInfo
@@ -70,11 +71,19 @@ class LetterWiseImeService : InputMethodService() {
     override fun onEvaluateFullscreenMode(): Boolean = false
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
-        // An IME receives hardware key events even while its window is hidden. Consuming
-        // d-pad events in that state takes over navigation for the whole device - it left a
-        // TV unnavigable, recoverable only via HOME or a USB mouse. Never consume anything
-        // unless the keyboard is actually on screen with somewhere to type.
-        if (!isInputViewShown || currentInputConnection == null) {
+        // An IME receives hardware key events even while its window is hidden. Consuming d-pad
+        // events in that state takes over navigation for the whole device - it left a TV
+        // unnavigable, recoverable only via HOME or a USB mouse.
+        //
+        // So while hidden exactly one key is honoured: the trigger the user assigned, which is
+        // unassigned by default and can never be a reserved key. One key, chosen deliberately,
+        // is a blast radius worth having; the d-pad is not.
+        if (!isInputViewShown) {
+            val trigger = preferences.triggerKeyCode
+            if (trigger != KeyBindings.NO_KEY && keyCode == trigger && event.repeatCount == 0) {
+                showSelfForExperiment()
+                return true
+            }
             return super.onKeyDown(keyCode, event)
         }
 
@@ -156,6 +165,23 @@ class LetterWiseImeService : InputMethodService() {
 
         render()
         return true
+    }
+
+    /**
+     * The experiment: raise the keyboard without an app having asked for it, to find out
+     * whether text can then be put into something like YouTube search.
+     *
+     * Expected to half-work. `requestShowSelf` can put the window on screen, but an IME writes
+     * through an `InputConnection` and a view that never requested input does not provide one -
+     * so the likely outcome is a visible keyboard with nowhere to send characters. The strip
+     * says which of the two happened rather than leaving it to guesswork; see
+     * docs/30-global-key-capture.md for why the accessibility route is the only one with both
+     * halves.
+     */
+    private fun showSelfForExperiment() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            requestShowSelf(0)
+        }
     }
 
     /**
@@ -258,6 +284,7 @@ class LetterWiseImeService : InputMethodService() {
                 hintMode = preferences.hintMode,
                 showLanguageChooser = showLanguageChooser,
                 customKeys = preferences.customKeys,
+                hasEditor = connection != null,
             )
         )
     }

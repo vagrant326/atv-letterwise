@@ -92,16 +92,29 @@ The `core` module is plain Kotlin with no Android dependencies, on purpose: the 
 and the shipped IME call the same disambiguation code, so a KSPC measured on a laptop is
 the KSPC that ships.
 
-## Branching
+## Branching and the two channels
 
-| Branch | What runs |
-|---|---|
-| `develop`, `feature/**`, `fix/**`, pull requests | CI — tests, lint, debug APK artifact |
-| `main` | Release — raises the version, signs, publishes to Releases |
+| Branch | What runs | Result |
+|---|---|---|
+| `feature/**`, `fix/**`, pull requests | CI — tests, lint, both debug APKs | artifacts only |
+| `develop` | Release dev | `dev-x.y.z`, installs as **atv-letterwise dev** |
+| `main` | Release | `vx.y.z`, installs as **atv-letterwise** |
 
-**A push to `main` is a release.** There is no separate tagging step: the next version is
-computed from the highest existing tag and raised by a patch. For a minor or major bump,
-run the Release workflow manually from the Actions tab and choose the level.
+**The dev build is a separate application**, not just a separate file: it carries its own
+`applicationId`, so it installs alongside the released one and both appear in the keyboard
+picker. That is the point — an experiment that misbehaves does not take the working keyboard
+with it, and this project has already lost a TV's navigation to one.
+
+Each channel counts its own versions and updates only from its own releases, matched by tag
+prefix. A dev build will never offer to install a production APK over itself.
+
+Day to day: work on `develop`, which publishes a dev build on every push. To ship, open a
+pull request from `develop` to `main` and merge it. **Do not delete `develop`** — it is
+long-lived. After merging, bring it back in line so the next dev release contains the merge:
+
+```bash
+git switch develop && git merge --ff-only main && git push
+```
 
 ## Installing
 
