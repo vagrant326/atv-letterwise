@@ -13,7 +13,6 @@ sealed interface Action {
     data object Punctuation : Action
     data object ToggleLanguage : Action
     data object Dismiss : Action
-    data object ClearAll : Action
 }
 
 object KeyBindings {
@@ -29,7 +28,7 @@ object KeyBindings {
         keyCode == KeyEvent.KEYCODE_DPAD_RIGHT -> Action.Accept
         keyCode == KeyEvent.KEYCODE_DPAD_LEFT -> Action.Backspace
         keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER -> Action.Enter
-        keyCode == KeyEvent.KEYCODE_BACK -> if (longPress) Action.ClearAll else Action.Dismiss
+        keyCode == KeyEvent.KEYCODE_BACK -> Action.Dismiss
         else -> null
     }
 

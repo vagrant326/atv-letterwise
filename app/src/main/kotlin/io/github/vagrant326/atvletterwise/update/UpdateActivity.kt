@@ -7,11 +7,17 @@ import android.util.TypedValue
 import android.widget.LinearLayout
 import android.widget.TextView
 import io.github.vagrant326.atvletterwise.BuildConfig
-import java.io.BufferedReader
+import java.io.FileNotFoundException
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.concurrent.Executors
 import javax.net.ssl.HttpsURLConnection
+
+private sealed interface Outcome {
+    data class Latest(val tag: String) : Outcome
+    data object NoReleases : Outcome
+    data class Failed(val detail: String) : Outcome
+}
 
 /**
  * The only component in this app that touches the network, and it runs in its own process
@@ -34,7 +40,7 @@ class UpdateActivity : Activity() {
         status = TextView(this).apply {
             setTextColor(Color.WHITE)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f)
-            text = "Installed ${BuildConfig.VERSION_NAME}\nChecking..."
+            text = "Installed ${BuildConfig.VERSION_NAME}\nChecking…"
         }
         setContentView(
             LinearLayout(this).apply {
@@ -45,43 +51,63 @@ class UpdateActivity : Activity() {
                 addView(status)
             }
         )
-        check()
-    }
-
-    private fun check() {
         Executors.newSingleThreadExecutor().execute {
-            val result = runCatching { latestTag() }
-            runOnUiThread { report(result) }
+            val outcome = check()
+            runOnUiThread { report(outcome) }
         }
     }
 
-    private fun report(result: Result<String?>) {
+    private fun report(outcome: Outcome) {
         val installed = BuildConfig.VERSION_NAME
-        status.text = result.fold(
-            onSuccess = { latest ->
-                when {
-                    latest == null -> "Installed $installed\nNo releases published yet."
-                    latest.removePrefix("v") == installed -> "Installed $installed\nUp to date."
-                    else -> "Installed $installed\nAvailable: $latest\n\n" +
-                        "Open $RELEASES_URL in a downloader app to install it."
-                }
-            },
-            onFailure = { "Installed $installed\nCheck failed: ${it.javaClass.simpleName}" },
-        )
+        status.text = when (outcome) {
+            is Outcome.NoReleases ->
+                "Installed $installed\nNo releases published yet."
+
+            is Outcome.Failed ->
+                "Installed $installed\nCheck failed: ${outcome.detail}"
+
+            is Outcome.Latest -> if (outcome.tag.removePrefix("v") == installed) {
+                "Installed $installed\nUp to date."
+            } else {
+                "Installed $installed\nAvailable: ${outcome.tag}\n\n" +
+                    "Open $RELEASES_URL in a downloader app to install it."
+            }
+        }
     }
 
-    private fun latestTag(): String? {
-        val connection = URL(API_URL).openConnection() as HttpsURLConnection
+    private fun check(): Outcome {
+        val connection = try {
+            URL(API_URL).openConnection() as HttpsURLConnection
+        } catch (failure: Exception) {
+            return Outcome.Failed(failure.javaClass.simpleName)
+        }
         return try {
             connection.requestMethod = "GET"
             connection.connectTimeout = TIMEOUT_MS
             connection.readTimeout = TIMEOUT_MS
             connection.setRequestProperty("Accept", "application/vnd.github+json")
-            if (connection.responseCode == HttpURLConnection.HTTP_NOT_FOUND) {
-                return null
+
+            // Android's HttpURLConnection is OkHttp-backed and can throw here on a 404
+            // rather than returning the code. A 404 is the normal state before the first
+            // release exists, so it must not surface as an error.
+            val status = try {
+                connection.responseCode
+            } catch (absent: FileNotFoundException) {
+                HttpURLConnection.HTTP_NOT_FOUND
             }
-            val body = connection.inputStream.bufferedReader().use(BufferedReader::readText)
-            TAG_NAME.find(body)?.groupValues?.get(1)
+
+            when {
+                status == HttpURLConnection.HTTP_NOT_FOUND -> Outcome.NoReleases
+                status !in 200..299 -> Outcome.Failed("HTTP $status")
+                else -> {
+                    val body = connection.inputStream.bufferedReader().use { it.readText() }
+                    TAG_NAME.find(body)?.groupValues?.get(1)
+                        ?.let { Outcome.Latest(it) }
+                        ?: Outcome.Failed("no tag_name in response")
+                }
+            }
+        } catch (failure: Exception) {
+            Outcome.Failed(failure.javaClass.simpleName)
         } finally {
             connection.disconnect()
         }

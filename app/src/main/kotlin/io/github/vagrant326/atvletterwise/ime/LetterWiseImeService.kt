@@ -50,6 +50,14 @@ class LetterWiseImeService : InputMethodService() {
     override fun onEvaluateFullscreenMode(): Boolean = false
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
+        // An IME receives hardware key events even while its window is hidden. Consuming
+        // d-pad events in that state takes over navigation for the whole device - it left
+        // a TV unnavigable, recoverable only via HOME or a USB mouse. Never consume
+        // anything unless the keyboard is actually on screen with somewhere to type.
+        if (!isInputViewShown || currentInputConnection == null) {
+            return super.onKeyDown(keyCode, event)
+        }
+
         val action = KeyBindings.of(keyCode, longPress = event.repeatCount > 0)
             ?: return super.onKeyDown(keyCode, event)
 
@@ -65,7 +73,6 @@ class LetterWiseImeService : InputMethodService() {
             Action.Accept -> composer.accept()
             Action.Punctuation -> cyclePunctuation()
             Action.ToggleLanguage -> toggleLanguage()
-            Action.ClearAll -> composer.clear()
 
             Action.Backspace -> {
                 if (!composer.backspace()) {
@@ -81,12 +88,13 @@ class LetterWiseImeService : InputMethodService() {
                 return true
             }
 
+            // One press always escapes, buffer or no buffer. Losing a half-typed query is
+            // a much smaller problem than not being able to get out of the keyboard.
             Action.Dismiss -> {
-                if (composer.isEmpty) {
-                    requestHideSelf(0)
-                } else {
-                    composer.clear()
-                }
+                composer.clear()
+                render()
+                requestHideSelf(0)
+                return true
             }
         }
 

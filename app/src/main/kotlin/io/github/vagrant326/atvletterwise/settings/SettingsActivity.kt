@@ -5,8 +5,11 @@ import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import android.provider.Settings
+import android.text.InputType
 import android.util.TypedValue
 import android.view.ViewGroup
+import android.view.inputmethod.EditorInfo
+import android.widget.EditText
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -44,6 +47,8 @@ class SettingsActivity : Activity() {
                     )
                 )
                 addView(legendToggle())
+                addView(body("Scratch field — try the keyboard here. Nothing is saved."))
+                addView(scratchField())
                 addView(
                     button("Keyboard settings - enable or switch keyboard") {
                         startActivity(Intent(Settings.ACTION_INPUT_METHOD_SETTINGS))
@@ -62,6 +67,23 @@ class SettingsActivity : Activity() {
                     )
                 )
             }
+        )
+    }
+
+    /**
+     * Somewhere to try the keyboard without leaving the app and without editing anything
+     * real. Deliberately not persisted and deliberately not read by anything.
+     */
+    private fun scratchField() = EditText(this).apply {
+        hint = "Type here"
+        inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+        imeOptions = EditorInfo.IME_ACTION_DONE
+        setTextColor(Color.WHITE)
+        setHintTextColor(0xFF6B6B78.toInt())
+        setTextSize(TypedValue.COMPLEX_UNIT_SP, 20f)
+        layoutParams = LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT,
         )
     }
 
