@@ -43,6 +43,7 @@ class SettingsActivity : Activity() {
                             "the previous letter on its own."
                     )
                 )
+                addView(legendToggle())
                 addView(
                     button("Keyboard settings - enable or switch keyboard") {
                         startActivity(Intent(Settings.ACTION_INPUT_METHOD_SETTINGS))
@@ -62,6 +63,23 @@ class SettingsActivity : Activity() {
                 )
             }
         )
+    }
+
+    /**
+     * The legend costs the strip a third of its height, and this remote's number keys have
+     * no letters printed on them, so switching it off leaves nothing anywhere to remind you
+     * which key holds which letters. Worth it once the mapping is in your fingers; a trap
+     * before that.
+     */
+    private fun legendToggle(): Button {
+        val preferences = Preferences(this)
+        lateinit var toggle: Button
+        fun label() = "Group legend in the strip: " + if (preferences.showLegend) "on" else "off"
+        toggle = button(label()) {
+            preferences.showLegend = !preferences.showLegend
+            toggle.text = label()
+        }
+        return toggle
     }
 
     private fun heading(text: String) = TextView(this).apply {

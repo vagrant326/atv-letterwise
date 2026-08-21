@@ -10,11 +10,13 @@ import io.github.vagrant326.atvletterwise.core.Disambiguator
 import io.github.vagrant326.atvletterwise.core.Partition
 import io.github.vagrant326.atvletterwise.model.Language
 import io.github.vagrant326.atvletterwise.model.ModelRepository
+import io.github.vagrant326.atvletterwise.settings.Preferences
 
 class LetterWiseImeService : InputMethodService() {
 
     private val partition = Partition.ITU
     private lateinit var models: ModelRepository
+    private lateinit var preferences: Preferences
     private lateinit var composer: Composer
     private var strip: CandidateStripView? = null
     private var language = Language.PL
@@ -30,6 +32,7 @@ class LetterWiseImeService : InputMethodService() {
     override fun onCreate() {
         super.onCreate()
         models = ModelRepository(this)
+        preferences = Preferences(this)
         composer = Composer(disambiguatorFor(language))
     }
 
@@ -132,7 +135,13 @@ class LetterWiseImeService : InputMethodService() {
             composer.pending?.let { connection.setComposingText(it.toString(), 1) }
             connection.endBatchEdit()
         }
-        strip?.update(composer, partition, language, models.isTrained(language))
+        strip?.update(
+            composer = composer,
+            partition = partition,
+            language = language,
+            trained = models.isTrained(language),
+            showLegend = preferences.showLegend,
+        )
     }
 
     private fun submit() {

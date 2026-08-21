@@ -32,9 +32,12 @@ class Partition(val groups: Map<Char, String>) {
 
     companion object {
         /**
-         * The phone keypad. Almost certainly not KSPC-optimal, but it is printed on the
-         * remote and most people already know it, so its learning cost is near zero.
-         * That is worth real KSPC and makes it the partition to beat, not a placeholder.
+         * The phone keypad. Almost certainly not KSPC-optimal, but most people already
+         * know it from feature phones, so it starts from prior familiarity rather than
+         * from nothing. Note that a TV remote's number keys carry no letters, so this is
+         * recalled knowledge, not an on-device reference - which is a weaker advantage
+         * than it would be on a phone, and weakens the case against an optimised
+         * partition accordingly.
          */
         val ITU = Partition(
             mapOf(

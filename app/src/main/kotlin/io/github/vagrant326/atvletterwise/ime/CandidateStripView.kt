@@ -42,10 +42,16 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
         addView(legendRow)
     }
 
-    fun update(composer: Composer, partition: Partition, language: Language, trained: Boolean) {
+    fun update(
+        composer: Composer,
+        partition: Partition,
+        language: Language,
+        trained: Boolean,
+        showLegend: Boolean,
+    ) {
         bufferRow.text = buffer(composer)
         candidateRow.text = candidates(composer)
-        legendRow.text = legend(partition, language, trained)
+        legendRow.text = legend(partition, language, trained, showLegend)
     }
 
     private fun buffer(composer: Composer): CharSequence {
@@ -77,11 +83,25 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
         return text
     }
 
-    private fun legend(partition: Partition, language: Language, trained: Boolean): CharSequence {
+    /**
+     * The group listing is optional; the language tag is not. Turning the legend off
+     * takes the strip from three rows to two, which is real estate back on a search
+     * screen - but the remote's number keys carry no letters, so with it off there is no
+     * reference anywhere for which key holds which letters.
+     */
+    private fun legend(
+        partition: Partition,
+        language: Language,
+        trained: Boolean,
+        showLegend: Boolean,
+    ): CharSequence {
+        val model = if (trained) language.label else "${language.label} (no model)"
+        if (!showLegend) {
+            return model
+        }
         val groups = partition.groups.entries
             .sortedBy { it.key }
             .joinToString("   ") { "${it.key}:${it.value}" }
-        val model = if (trained) language.label else "${language.label} (no model)"
         return "$groups   0:space   $model"
     }
 
