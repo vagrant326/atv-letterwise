@@ -5,6 +5,7 @@ import android.content.Context
 import android.graphics.Color
 import android.graphics.Typeface
 import android.text.SpannableStringBuilder
+import android.text.TextUtils
 import android.text.Spanned
 import android.text.style.BackgroundColorSpan
 import android.text.style.ForegroundColorSpan
@@ -27,9 +28,9 @@ import io.github.vagrant326.atvletterwise.model.Language
 @SuppressLint("ViewConstructor")
 class CandidateStripView(context: Context) : LinearLayout(context) {
 
-    private val bufferRow = row(22f, bold = true)
+    private val bufferRow = row(22f, bold = true).keepTailVisible()
     private val candidateRow = row(18f)
-    private val legendRow = row(13f)
+    private val legendRow = row(13f).keepTailVisible()
 
     init {
         orientation = VERTICAL
@@ -42,15 +43,13 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
     }
 
     fun update(composer: Composer, partition: Partition, language: Language, trained: Boolean) {
-        bufferRow.text = buffer(composer, language, trained)
+        bufferRow.text = buffer(composer)
         candidateRow.text = candidates(composer)
-        legendRow.text = legend(partition)
+        legendRow.text = legend(partition, language, trained)
     }
 
-    private fun buffer(composer: Composer, language: Language, trained: Boolean): CharSequence {
-        val prefix = if (trained) language.label else "${language.label} (no model)"
-        val text = SpannableStringBuilder("$prefix  ")
-        text.setSpan(ForegroundColorSpan(DIM), 0, text.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+    private fun buffer(composer: Composer): CharSequence {
+        val text = SpannableStringBuilder()
         text.append(composer.committedText)
         composer.pending?.let { pending ->
             val start = text.length
@@ -78,10 +77,13 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
         return text
     }
 
-    private fun legend(partition: Partition): CharSequence =
-        partition.groups.entries
+    private fun legend(partition: Partition, language: Language, trained: Boolean): CharSequence {
+        val groups = partition.groups.entries
             .sortedBy { it.key }
-            .joinToString("   ") { "${it.key}:${it.value}" } + "   0:space"
+            .joinToString("   ") { "${it.key}:${it.value}" }
+        val model = if (trained) language.label else "${language.label} (no model)"
+        return "$groups   0:space   $model"
+    }
 
     private fun row(sizeSp: Float, bold: Boolean = false) = TextView(context).apply {
         setTextColor(FOREGROUND)
@@ -91,6 +93,16 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
             setTypeface(typeface, Typeface.BOLD)
         }
         layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT)
+    }
+
+    /**
+     * Long input truncates at the front, not the back. The tail is where the character in
+     * flight is, and that is the one thing the user has to see to decide whether to press
+     * NEXT - losing it defeats the entire method.
+     */
+    private fun TextView.keepTailVisible() = apply {
+        isSingleLine = true
+        ellipsize = TextUtils.TruncateAt.START
     }
 
     private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
