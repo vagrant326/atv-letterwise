@@ -23,6 +23,7 @@ import android.widget.ScrollView
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import io.github.vagrant326.atvletterwise.BuildConfig
+import io.github.vagrant326.atvletterwise.settings.Preferences
 import java.io.File
 import java.io.FileNotFoundException
 import java.net.HttpURLConnection
@@ -152,6 +153,13 @@ class UpdateActivity : Activity() {
                         "file, nothing sent. What you type never leaves the device.",
                     MUTED,
                     13f,
+                ).apply { setPadding(0, dp(8), 0, 0) }
+            )
+            addView(
+                label(
+                    "Reopen after update: ${Preferences(this@UpdateActivity).lastRelaunch}",
+                    MUTED,
+                    12f,
                 ).apply { setPadding(0, dp(8), 0, 0) }
             )
         }

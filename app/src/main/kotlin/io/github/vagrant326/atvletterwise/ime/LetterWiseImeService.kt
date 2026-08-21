@@ -21,6 +21,7 @@ class LetterWiseImeService : InputMethodService() {
     private var language = Language.PL
     private var punctuationIndex = -1
     private var showLanguageChooser = false
+    private var composing = false
 
     override fun onCreate() {
         super.onCreate()
@@ -42,7 +43,26 @@ class LetterWiseImeService : InputMethodService() {
             language = preferences.activeLanguage
             composer.useDisambiguator(disambiguatorFor(language), context())
         }
+        moveCaretToEnd(info)
         render()
+    }
+
+    /**
+     * A field that opens with the caret at the front is almost never what was wanted: coming
+     * back to a search box means adding to the query, not prefixing it.
+     *
+     * Only nudged when the selection is collapsed at zero and there is text after it, so an
+     * editor that placed the caret deliberately, or gave the user a selection, is left alone.
+     */
+    private fun moveCaretToEnd(info: EditorInfo?) {
+        if (info == null || info.initialSelStart != 0 || info.initialSelEnd != 0) {
+            return
+        }
+        val connection = currentInputConnection ?: return
+        val tail = connection.getTextAfterCursor(MAX_TAIL, 0)?.length ?: 0
+        if (tail > 0) {
+            connection.setSelection(tail, tail)
+        }
     }
 
     override fun onEvaluateFullscreenMode(): Boolean = false
@@ -211,7 +231,21 @@ class LetterWiseImeService : InputMethodService() {
         Disambiguator(partition, models.modelFor(language))
 
     private fun render() {
-        currentInputConnection?.setComposingText(composer.pending?.toString() ?: "", 1)
+        val connection = currentInputConnection
+        val pending = composer.pending
+        if (connection != null) {
+            // Only touch the composing region when there is something to say about it. Setting
+            // an empty composing text unconditionally creates and clears a region on every
+            // keystroke, which editors are entitled to interpret as a selection change.
+            if (pending != null) {
+                connection.setComposingText(pending.toString(), 1)
+                composing = true
+            } else if (composing) {
+                connection.setComposingText("", 1)
+                connection.finishComposingText()
+                composing = false
+            }
+        }
         strip?.update(
             StripState(
                 composer = composer,
@@ -240,5 +274,8 @@ class LetterWiseImeService : InputMethodService() {
     private companion object {
         /** Enough for an order-5 model; the table in use needs two. */
         const val CONTEXT_LENGTH = 4
+
+        /** Only used to find the end of an existing value, so a generous bound is plenty. */
+        const val MAX_TAIL = 2000
     }
 }
