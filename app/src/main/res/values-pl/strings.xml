@@ -95,9 +95,7 @@
     <string name="update_install">Zainstaluj</string>
     <string name="update_installed_label">ZAINSTALOWANA</string>
     <string name="update_privacy">Sprawdzane tylko po naciśnięciu. Jedno zapytanie o wersję, jedno o plik, nic nie jest wysyłane. To, co piszesz, nigdy nie opuszcza urządzenia.</string>
-    <string name="update_relaunch">Otwarcie po aktualizacji: %1$s</string>
     <string name="update_back">BACK wraca do ustawień.</string>
-    <string name="update_relaunch_never">nie zaobserwowano</string>
 
     <string name="strip_no_model">%1$s bez modelu</string>
     <string name="strip_press_keys">naciśnij 2-9</string>

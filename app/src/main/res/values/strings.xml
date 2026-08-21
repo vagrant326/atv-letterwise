@@ -108,9 +108,7 @@
     <string name="update_install">Install</string>
     <string name="update_installed_label">INSTALLED</string>
     <string name="update_privacy">Checked only when you press it. One request for the version, one for the file, nothing sent. What you type never leaves the device.</string>
-    <string name="update_relaunch">Reopen after update: %1$s</string>
     <string name="update_back">BACK returns to settings.</string>
-    <string name="update_relaunch_never">never seen</string>
 
     <string name="strip_no_model">%1$s no model</string>
     <string name="strip_press_keys">press 2-9</string>

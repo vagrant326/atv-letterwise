@@ -113,15 +113,6 @@ class Preferences(context: Context) {
 
     val customKeys: CustomKeys get() = CustomKeys(languageKeyCode, deleteKeyCode)
 
-    /**
-     * What the post-update relaunch attempt managed, written by `PackageReplacedReceiver`.
-     * Read on the update screen, because after an update there is no log to look at — the
-     * process that would have written one was killed by the install.
-     */
-    var lastRelaunch: String?
-        get() = store.getString(KEY_LAST_RELAUNCH, null)
-        set(value) = store.edit().putString(KEY_LAST_RELAUNCH, value).apply()
-
     fun keyCodeFor(binding: Binding): Int = when (binding) {
         Binding.LANGUAGE -> languageKeyCode
         Binding.DELETE -> deleteKeyCode
@@ -149,6 +140,5 @@ class Preferences(context: Context) {
         const val KEY_ACTIVE_LANGUAGE = "active_language"
         const val KEY_LANGUAGE_KEYCODE = "language_keycode"
         const val KEY_DELETE_KEYCODE = "delete_keycode"
-        const val KEY_LAST_RELAUNCH = "last_relaunch"
     }
 }

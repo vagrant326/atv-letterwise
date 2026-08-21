@@ -48,17 +48,6 @@
             </intent-filter>
         </activity>
 
-        <!-- Experiment: try to reopen the app after it replaces itself. Background activity
-             starts are blocked from Android 10 on, so this may do nothing; it records what it
-             managed either way, since the install kills whatever could have logged it. -->
-        <receiver
-            android:name=".update.PackageReplacedReceiver"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
-            </intent-filter>
-        </receiver>
-
         <activity
             android:name=".settings.KeyCaptureActivity"
             android:exported="false"

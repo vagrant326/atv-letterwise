@@ -24,7 +24,6 @@ import android.widget.TextView
 import androidx.core.content.ContextCompat
 import io.github.vagrant326.atvletterwise.BuildConfig
 import io.github.vagrant326.atvletterwise.R
-import io.github.vagrant326.atvletterwise.settings.Preferences
 import java.io.File
 import java.io.FileNotFoundException
 import java.net.HttpURLConnection
@@ -151,9 +150,6 @@ class UpdateActivity : Activity() {
             addView(secondary)
         }
 
-        val relaunch = Preferences(this).lastRelaunch
-            ?: getString(R.string.update_relaunch_never)
-
         val installedCard = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             background = card(SUNKEN)
@@ -166,10 +162,6 @@ class UpdateActivity : Activity() {
             )
             addView(
                 label(getString(R.string.update_privacy), MUTED, 13f)
-                    .apply { setPadding(0, dp(8), 0, 0) }
-            )
-            addView(
-                label(getString(R.string.update_relaunch, relaunch), MUTED, 12f)
                     .apply { setPadding(0, dp(8), 0, 0) }
             )
         }
