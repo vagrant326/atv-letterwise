@@ -15,6 +15,12 @@ on:
 permissions:
   contents: write
 
+env:
+  # Not a secret, and deliberately not stored as one. GitHub redacts every occurrence of
+  # a secret's value anywhere in the logs, so an alias like "atv" blanks out the repo name
+  # and the APK filename too, which makes the logs hard to read for no security gain.
+  KEY_ALIAS: atv
+
 concurrency:
   group: release
   cancel-in-progress: false
@@ -103,7 +109,6 @@ jobs:
       - name: Validate keystore and credentials
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           set -u
@@ -148,7 +153,6 @@ jobs:
         env:
           KEYSTORE_FILE: ${{ runner.temp }}/release.jks
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           ./gradlew --no-daemon assembleRelease \
@@ -166,7 +170,12 @@ jobs:
           RENAMED="atv-letterwise-${{ steps.v.outputs.name }}.apk"
           mv "$APK" "$RENAMED"
           echo "APK=$RENAMED" >> "$GITHUB_ENV"
-          "$ANDROID_HOME"/build-tools/*/apksigner verify --print-certs "$RENAMED"
+          # Runners ship several build-tools versions, so an unquoted glob here expands to
+          # every one of them: the first becomes the command and the rest its arguments.
+          # Pick the highest version explicitly.
+          APKSIGNER=$(ls -d "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
+          echo "using $APKSIGNER"
+          "$APKSIGNER" verify --print-certs "$RENAMED"
 
       - name: Publish release
         env:
