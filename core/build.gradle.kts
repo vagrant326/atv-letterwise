@@ -19,3 +19,20 @@ tasks.test {
         events("passed", "failed", "skipped")
     }
 }
+
+/**
+ * KSPC over the query corpus, using the shipped disambiguation code. Lives in the test
+ * source set so the runner never reaches the APK.
+ */
+tasks.register<JavaExec>("bench") {
+    group = "verification"
+    description = "Measures KSPC over bench/queries-v1.tsv"
+    mainClass.set("io.github.vagrant326.atvletterwise.core.bench.BenchmarkKt")
+    classpath = sourceSets["test"].runtimeClasspath
+    workingDir = rootProject.projectDir
+    args(
+        "--queries", "bench/queries-v1.tsv",
+        "--model-pl", "app/src/main/assets/trigrams-pl.bin",
+        "--model-en", "app/src/main/assets/trigrams-en.bin",
+    )
+}

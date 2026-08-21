@@ -13,7 +13,9 @@ import io.github.vagrant326.atvletterwise.settings.Preferences
 
 class LetterWiseImeService : InputMethodService() {
 
-    private val partition = Partition.ITU
+    /** Polish carries nine more letters on the same eight keys, so this follows the language. */
+    private val partition: Partition get() = language.partition
+
     private lateinit var models: ModelRepository
     private lateinit var preferences: Preferences
     private lateinit var composer: Composer
@@ -228,7 +230,7 @@ class LetterWiseImeService : InputMethodService() {
     }
 
     private fun disambiguatorFor(language: Language) =
-        Disambiguator(partition, models.modelFor(language))
+        Disambiguator(language.partition, models.modelFor(language))
 
     private fun render() {
         val connection = currentInputConnection

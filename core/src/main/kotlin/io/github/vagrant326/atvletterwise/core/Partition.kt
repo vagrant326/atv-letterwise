@@ -51,5 +51,31 @@ class Partition(val groups: Map<Char, String>) {
                 '9' to "wxyz",
             )
         )
+
+        /**
+         * Polish: 35 letters on the same eight keys, each diacritic sitting in the group of
+         * the letter it is a variant of and placed directly after it.
+         *
+         * They are **not** separate groups. Nine extra letters spread over eight keys would
+         * wreck a layout whose whole selling point is that the mapping is already familiar,
+         * and the base letter is where a user looks for `ó`.
+         *
+         * The cost is real and lands unevenly: `9` grows from four letters to six because
+         * `ź` and `ż` both hang off `z`, while `4` and `8` are untouched. That skew is why
+         * the partition search has to run over this alphabet rather than over 26 letters
+         * with a correction factor.
+         */
+        val ITU_PL = Partition(
+            mapOf(
+                '2' to "aąbcć",
+                '3' to "deęf",
+                '4' to "ghi",
+                '5' to "jklł",
+                '6' to "mnńoó",
+                '7' to "pqrsś",
+                '8' to "tuv",
+                '9' to "wxyzźż",
+            )
+        )
     }
 }

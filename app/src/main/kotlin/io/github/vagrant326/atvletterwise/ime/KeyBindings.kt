@@ -1,6 +1,7 @@
 package io.github.vagrant326.atvletterwise.ime
 
 import android.view.KeyEvent
+import io.github.vagrant326.atvletterwise.core.Simulator
 
 sealed interface Action {
     data class Group(val key: Char) : Action
@@ -99,6 +100,10 @@ object KeyBindings {
         }
     }
 
-    /** Cycled by the punctuation key. Order is frequency-ish; measure it later. */
-    val PUNCTUATION = ".,-':/".toList()
+    /**
+     * Cycled by the punctuation key, and shared with the simulator so a measured cost matches
+     * the shipped one. `&` earns its place from the real query set — "Bohren & der Club of
+     * Gore" is unreachable without it. The order itself is still a guess worth measuring.
+     */
+    val PUNCTUATION = Simulator.PUNCTUATION
 }

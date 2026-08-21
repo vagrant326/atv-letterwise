@@ -46,7 +46,13 @@ data class TrialResult(
 class Simulator(
     private val partition: Partition,
     private val disambiguator: Disambiguator,
-    private val deterministicKeys: Map<Char, Char> = DEFAULT_DETERMINISTIC_KEYS,
+    /**
+     * Symbols reachable without disambiguation, and what each one costs. Space is one press
+     * on its own key; punctuation shares a key and cycles, so the fourth mark in the cycle
+     * costs four presses. Counting all of them as one would quietly flatter any query
+     * containing an ampersand.
+     */
+    private val deterministicKeys: Map<Char, Int> = DEFAULT_DETERMINISTIC_KEYS,
     private val requireAccept: Boolean = false,
 ) {
 
@@ -59,8 +65,9 @@ class Simulator(
         val resolved = StringBuilder()
 
         for (character in target) {
-            if (deterministicKeys.containsKey(character)) {
-                deterministicPresses++
+            val deterministicCost = deterministicKeys[character]
+            if (deterministicCost != null) {
+                deterministicPresses += deterministicCost
                 resolved.append(character)
                 continue
             }
@@ -98,10 +105,18 @@ class Simulator(
         targets.fold(TrialResult.EMPTY) { total, target -> total + run(target) }
 
     companion object {
+        /** The punctuation cycle, in the order the keyboard offers it. */
+        val PUNCTUATION = ".,-'&:/".toList()
+
         /**
-         * Space gets its own key. Word boundaries are where the n-gram model is weakest,
-         * so keeping them out of the ambiguous set helps accuracy as well as KSPC.
+         * Space gets its own key, at one press. Word boundaries are where the n-gram model is
+         * weakest, so keeping them out of the ambiguous set helps accuracy as well as KSPC.
+         *
+         * Punctuation shares the `1` key and costs its position in the cycle.
          */
-        val DEFAULT_DETERMINISTIC_KEYS = mapOf(' ' to '0')
+        val DEFAULT_DETERMINISTIC_KEYS: Map<Char, Int> = buildMap {
+            put(' ', 1)
+            PUNCTUATION.forEachIndexed { position, mark -> put(mark, position + 1) }
+        }
     }
 }
