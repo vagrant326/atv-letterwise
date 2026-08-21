@@ -112,9 +112,20 @@ jobs:
           echo "sha256:       $(sha256sum "$KS" | cut -d' ' -f1)"
           echo "expected:     573d49d428d778a9e3ed61b31ca0f3ea8414a3cba11c6a434b89d1636f4d119b"
 
-          if ! keytool -list -keystore "$KS" -storepass "$KEYSTORE_PASSWORD" > /tmp/entries 2>/tmp/err; then
-            echo "::error::Cannot open the keystore. KEYSTORE_PASSWORD is wrong, or the decoded file is not a keystore."
-            sed -e "s/$KEYSTORE_PASSWORD/[redacted]/g" /tmp/err || true
+          # A secret is stored verbatim - the UI does not trim. A password pasted with a
+          # trailing newline or space is indistinguishable from a wrong one in Gradle's
+          # error, so test the trimmed form separately and say which case it is.
+          # The trimmed value is deliberately not reused downstream: it is not a registered
+          # secret, so it would not be masked in the log.
+          TRIMMED=$(printf '%s' "$KEYSTORE_PASSWORD" | tr -d '[:space:]')
+          if keytool -list -keystore "$KS" -storepass "$KEYSTORE_PASSWORD" > /tmp/entries 2>/tmp/err; then
+            echo "store password accepted"
+          elif keytool -list -keystore "$KS" -storepass "$TRIMMED" > /tmp/entries 2>/tmp/err; then
+            echo "::error::KEYSTORE_PASSWORD is correct but has whitespace around it. Re-enter the secret without a trailing newline or space."
+            exit 1
+          else
+            echo "::error::KEYSTORE_PASSWORD does not open this keystore, with or without surrounding whitespace. The password itself is wrong."
+            echo "Nothing has been released yet, so regenerating the keystore costs nothing - see docs/release-and-signing.md."
             exit 1
           fi
           echo "keystore opened, entries:"
