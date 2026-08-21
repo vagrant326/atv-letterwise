@@ -23,6 +23,7 @@ Format, big-endian throughout so the Kotlin side can read it with a plain ByteBu
 """
 
 import argparse
+import array
 import os
 import struct
 import sys
@@ -93,9 +94,24 @@ def write(language: str, order: int, tables: list[list[int]], out: str) -> str:
         for symbol in alphabet:
             out.write(struct.pack(">H", ord(symbol)))
         for table in tables:
-            out.write(struct.pack(f">{len(table)}I", *table))
+            # array rather than struct.pack(f">{n}I", *table): at order 4 the highest table
+            # is over a million cells, and unpacking that into call arguments is pointless
+            # work.
+            packed = array.array("I", table)
+            if sys.byteorder == "little":
+                packed.byteswap()
+            out.write(packed.tobytes())
 
     size = os.path.getsize(target)
+    # How much of the dense table is actually used. This is the number that decides whether
+    # dense storage is still the right call at a given order.
+    for at, table in enumerate(tables, start=1):
+        filled = sum(1 for cell in table if cell)
+        share = filled / len(table) * 100
+        print(
+            f"  order {at}: {filled}/{len(table)} cells used ({share:.1f}%)",
+            file=sys.stderr,
+        )
     print(f"{os.path.basename(target)}  {size / 1024:.0f} kB", file=sys.stderr)
     return target
 
