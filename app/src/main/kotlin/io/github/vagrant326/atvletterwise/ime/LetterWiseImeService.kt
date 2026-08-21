@@ -21,6 +21,7 @@ class LetterWiseImeService : InputMethodService() {
     private var strip: CandidateStripView? = null
     private var language = Language.PL
     private var punctuationIndex = -1
+    private var showLanguageChooser = false
 
     /**
      * What has actually been committed into the target field. The composer owns the
@@ -33,6 +34,7 @@ class LetterWiseImeService : InputMethodService() {
         super.onCreate()
         models = ModelRepository(this)
         preferences = Preferences(this)
+        language = preferences.activeLanguage
         composer = Composer(disambiguatorFor(language))
     }
 
@@ -44,6 +46,12 @@ class LetterWiseImeService : InputMethodService() {
         composer.clear()
         mirrored = ""
         punctuationIndex = -1
+        showLanguageChooser = false
+        // The set may have changed in settings while the keyboard was down.
+        if (language !in preferences.languageSet.languages) {
+            language = preferences.activeLanguage
+            composer.useDisambiguator(disambiguatorFor(language))
+        }
         render()
     }
 
@@ -64,6 +72,10 @@ class LetterWiseImeService : InputMethodService() {
         if (action !is Action.Punctuation) {
             punctuationIndex = -1
         }
+        // Any key that is not part of choosing a language puts the chooser away.
+        if (action != Action.NextLanguage && action != Action.ShowLanguages) {
+            showLanguageChooser = false
+        }
 
         when (action) {
             is Action.Group -> composer.pressGroup(action.key)
@@ -72,7 +84,8 @@ class LetterWiseImeService : InputMethodService() {
             Action.PreviousCandidate -> composer.previousCandidate()
             Action.Accept -> composer.accept()
             Action.Punctuation -> cyclePunctuation()
-            Action.ToggleLanguage -> toggleLanguage()
+            Action.NextLanguage -> nextLanguage()
+            Action.ShowLanguages -> showLanguageChooser = true
 
             Action.Backspace -> {
                 if (!composer.backspace()) {
@@ -114,9 +127,19 @@ class LetterWiseImeService : InputMethodService() {
         composer.pressSymbol(KeyBindings.PUNCTUATION[punctuationIndex])
     }
 
-    private fun toggleLanguage() {
-        language = if (language == Language.PL) Language.EN else Language.PL
-        composer.useDisambiguator(disambiguatorFor(language))
+    /**
+     * Cycles through the languages the user enabled, not through everything the app knows.
+     * Cycling is only usable while that list is short - the point of the long press is to
+     * give a route that still works when it is not.
+     */
+    private fun nextLanguage() {
+        val enabled = preferences.languageSet.languages
+        if (enabled.size > 1) {
+            val index = enabled.indexOf(language)
+            language = enabled[(index + 1) % enabled.size]
+            preferences.activeLanguage = language
+            composer.useDisambiguator(disambiguatorFor(language))
+        }
     }
 
     private fun disambiguatorFor(language: Language) =
@@ -144,11 +167,15 @@ class LetterWiseImeService : InputMethodService() {
             connection.endBatchEdit()
         }
         strip?.update(
-            composer = composer,
-            partition = partition,
-            language = language,
-            trained = models.isTrained(language),
-            hintMode = preferences.hintMode,
+            StripState(
+                composer = composer,
+                partition = partition,
+                language = language,
+                enabledLanguages = preferences.languageSet.languages,
+                trained = models.isTrained(language),
+                hintMode = preferences.hintMode,
+                showLanguageChooser = showLanguageChooser,
+            )
         )
     }
 

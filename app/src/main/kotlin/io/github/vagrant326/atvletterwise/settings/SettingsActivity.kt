@@ -46,19 +46,15 @@ class SettingsActivity : Activity() {
         content.addView(heading("LetterWise"))
         content.addView(caption("Version ${BuildConfig.VERSION_NAME}"))
 
-        content.addView(sectionLabel("Try it"))
-        content.addView(scratchField())
-        content.addView(
-            caption("Focus this field to bring the keyboard up. Nothing here is saved.")
-        )
-
         content.addView(sectionLabel("Keyboard"))
         content.addView(hintModeRow())
+        content.addView(languageSetRow())
         content.addView(
-            row("Switch or enable keyboard", "System") {
+            navigationRow("Android keyboard settings") {
                 startActivity(Intent(Settings.ACTION_INPUT_METHOD_SETTINGS))
             }
         )
+        content.addView(caption("Leaves this app. Enable or switch the active keyboard there."))
 
         content.addView(sectionLabel("Updates"))
         content.addView(
@@ -77,12 +73,19 @@ class SettingsActivity : Activity() {
         content.addView(sectionLabel("How to type"))
         content.addView(
             caption(
-                "2-9 pick a letter group. 0 is space. 1 is punctuation, long press switches " +
-                    "language. Up and down walk the alternatives, right accepts, left " +
+                "2-9 pick a letter group. 0 is space. 1 is punctuation. * switches language, " +
+                    "long press lists them; long press on 1 does the same, for remotes with " +
+                    "no * key. Up and down walk the alternatives, right accepts, left " +
                     "deletes, centre submits, back closes.\n\n" +
                     "Accept is optional: pressing the next group key accepts the previous " +
                     "letter on its own."
             )
+        )
+
+        content.addView(sectionLabel("Try it"))
+        content.addView(scratchField())
+        content.addView(
+            caption("Focus this field to bring the keyboard up. Nothing here is saved.")
         )
 
         setContentView(
@@ -162,6 +165,57 @@ class SettingsActivity : Activity() {
         }
     }
 
+    private fun languageSetRow(): View {
+        lateinit var control: LinearLayout
+        lateinit var value: TextView
+
+        control = row("Languages on the * key", preferences.languageSet.label) {
+            preferences.languageSet = preferences.languageSet.next()
+            value.text = preferences.languageSet.label
+        }
+        value = control.getChildAt(1) as TextView
+        return control
+    }
+
+    /**
+     * Visually distinct from the setting rows above, because it does something categorically
+     * different: it leaves the app. A row that cycles a value in place and a row that throws
+     * you into Android settings should not look the same, which is exactly how they read
+     * before.
+     */
+    private fun navigationRow(label: String, onClick: () -> Unit) = LinearLayout(this).apply {
+        orientation = LinearLayout.HORIZONTAL
+        isFocusable = true
+        isClickable = true
+        setPadding(dp(14), dp(14), dp(14), dp(14))
+        setBackgroundColor(NAV_ROW)
+        layoutParams = LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+        ).apply { topMargin = dp(6) }
+
+        addView(
+            TextView(this@SettingsActivity).apply {
+                text = label
+                setTextColor(SECONDARY)
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f)
+                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            }
+        )
+        addView(
+            TextView(this@SettingsActivity).apply {
+                text = "↗"
+                setTextColor(SECONDARY)
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f)
+            }
+        )
+
+        setOnFocusChangeListener { view, hasFocus ->
+            view.setBackgroundColor(if (hasFocus) NAV_ROW_FOCUSED else NAV_ROW)
+        }
+        setOnClickListener { onClick() }
+    }
+
     /** Label on the left, current value on the right, focus visible. Standard TV list row. */
     private fun row(label: String, value: String, onClick: () -> Unit) = LinearLayout(this).apply {
         orientation = LinearLayout.HORIZONTAL
@@ -222,6 +276,9 @@ class SettingsActivity : Activity() {
         const val BACKGROUND = 0xFF08080B.toInt()
         const val ROW = 0xFF16161C.toInt()
         const val ROW_FOCUSED = 0xFF2A3A46.toInt()
+        // Flatter and dimmer than a setting row: it is a way out, not a value to change.
+        const val NAV_ROW = 0xFF101014.toInt()
+        const val NAV_ROW_FOCUSED = 0xFF232430.toInt()
         const val FIELD = 0xFF16161C.toInt()
         const val FIELD_FOCUSED = 0xFF22303A.toInt()
         const val SECONDARY = 0xFFB0B0BC.toInt()

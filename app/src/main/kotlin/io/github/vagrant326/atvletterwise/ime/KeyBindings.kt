@@ -11,14 +11,23 @@ sealed interface Action {
     data object Backspace : Action
     data object Enter : Action
     data object Punctuation : Action
-    data object ToggleLanguage : Action
+    data object NextLanguage : Action
+    data object ShowLanguages : Action
     data object Dismiss : Action
 }
 
 object KeyBindings {
 
     fun of(keyCode: Int, longPress: Boolean): Action? = when {
-        keyCode == KeyEvent.KEYCODE_1 -> if (longPress) Action.ToggleLanguage else Action.Punctuation
+        // Language lives on '*', the phone keypad's spare key. Long press on '1' keeps
+        // working as a fallback: plenty of TV remotes have a numpad but no '*' at all, and
+        // there is no way to find out from here which kind this is.
+        keyCode == KeyEvent.KEYCODE_STAR ->
+            if (longPress) Action.ShowLanguages else Action.NextLanguage
+
+        keyCode == KeyEvent.KEYCODE_1 ->
+            if (longPress) Action.NextLanguage else Action.Punctuation
+
         keyCode == KeyEvent.KEYCODE_0 -> Action.Symbol(' ')
         keyCode in KeyEvent.KEYCODE_2..KeyEvent.KEYCODE_9 ->
             Action.Group('2' + (keyCode - KeyEvent.KEYCODE_2))
