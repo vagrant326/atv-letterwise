@@ -46,7 +46,7 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
 
     private val keypad = LinearLayout(context).apply {
         orientation = VERTICAL
-        layoutParams = LayoutParams(dp(230), LayoutParams.WRAP_CONTENT)
+        layoutParams = LayoutParams(dp(276), LayoutParams.WRAP_CONTENT)
     }
 
     private val keypadCells = mutableMapOf<Char, TextView>()
@@ -230,7 +230,7 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
             gravity = Gravity.CENTER
             setLineSpacing(0f, 0.95f)
-            setPadding(dp(2), dp(3), dp(2), dp(3))
+            setPadding(dp(6), dp(4), dp(6), dp(4))
             layoutParams = LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
                 marginStart = dp(2)
                 marginEnd = dp(2)

@@ -211,43 +211,19 @@ class SettingsActivity : Activity() {
 
     private fun checkbox(checked: Boolean) = if (checked) "☑" else "☐"
 
-    /**
-     * Clearing lives here rather than on the capture screen: that screen has no focusable
-     * views on purpose, because focus navigation and raw key capture cannot share a screen.
-     */
     private fun captureRow(binding: Binding): View {
-        val container = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        lateinit var clear: View
-
-        fun label(): String {
-            val code = preferences.keyCodeFor(binding)
-            val value = if (code == KeyBindings.NO_KEY) {
-                "not set"
-            } else {
-                KeyEvent.keyCodeToString(code).removePrefix("KEYCODE_")
-            }
-            return "${binding.title}: $value"
+        val code = preferences.keyCodeFor(binding)
+        val value = if (code == KeyBindings.NO_KEY) {
+            "not set"
+        } else {
+            KeyEvent.keyCodeToString(code).removePrefix("KEYCODE_")
         }
-
-        val open = navigationRow(label()) {
+        return navigationRow("${binding.title}: $value") {
             startActivity(
                 Intent(this, KeyCaptureActivity::class.java)
                     .putExtra(KeyCaptureActivity.EXTRA_BINDING, binding.name)
             )
         }
-        val title = open.getChildAt(0) as TextView
-
-        clear = row("Clear ${binding.title.lowercase()}", "") {
-            preferences.assign(binding, KeyBindings.NO_KEY)
-            title.text = label()
-            clear.visibility = View.GONE
-        }
-        clear.visibility =
-            if (preferences.keyCodeFor(binding) == KeyBindings.NO_KEY) View.GONE else View.VISIBLE
-
-        container.addView(open)
-        container.addView(clear)
-        return container
     }
 
     /**
