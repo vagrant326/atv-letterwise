@@ -29,10 +29,27 @@ jobs:
         id: v
         run: |
           TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          case "$TAG" in
+            v[0-9]*.[0-9]*.[0-9]*) ;;
+            *) echo "::error::Tag '$TAG' is not vMAJOR.MINOR.PATCH"; exit 1 ;;
+          esac
+          NAME="${TAG#v}"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           # versionName is the tag without the leading v, so the in-app update check can
-          # compare it against the GitHub releases API without parsing anything.
-          echo "name=${TAG#v}" >> "$GITHUB_OUTPUT"
+          # compare it against the releases API without parsing anything.
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          # versionCode is derived from the tag rather than from github.run_number.
+          # run_number is per-workflow runner state: recreating or renaming this file
+          # resets it to 1, versionCode goes backwards, and Android then refuses every
+          # future update with no obvious cause. Sideloading is the only delivery channel
+          # here, so that failure would be unrecoverable without an uninstall.
+          MAJOR="${NAME%%.*}"; REST="${NAME#*.}"
+          MINOR="${REST%%.*}"; PATCH="${REST#*.}"
+          if [ "$MINOR" -gt 99 ] || [ "$PATCH" -gt 99 ]; then
+            echo "::error::MINOR and PATCH must each stay below 100 for versionCode to keep increasing"
+            exit 1
+          fi
+          echo "code=$((MAJOR * 10000 + MINOR * 100 + PATCH))" >> "$GITHUB_OUTPUT"
 
       - name: Unit tests
         run: ./gradlew --no-daemon test
@@ -58,7 +75,7 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           ./gradlew --no-daemon assembleRelease \
-            -PversionCode=${{ github.run_number }} \
+            -PversionCode=${{ steps.v.outputs.code }} \
             -PversionName=${{ steps.v.outputs.name }}
 
       - name: Verify the APK is actually signed with the release key
