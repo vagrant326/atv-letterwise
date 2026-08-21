@@ -45,8 +45,8 @@ class KeyCaptureActivity : Activity() {
     private lateinit var footer: TextView
     private lateinit var assignedValue: TextView
 
-    /** Captured but not yet confirmed. Confirming needs the same key twice. */
-    private var candidate: Int? = null
+    /** Set once the first acceptable key has been taken. Nothing after it is captured. */
+    private var captured = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -114,51 +114,34 @@ class KeyCaptureActivity : Activity() {
         }
 
         if (keyCode == KeyEvent.KEYCODE_BACK) {
-            // With a candidate on screen, BACK throws the candidate away rather than the
-            // whole screen: it is the natural undo for pressing the wrong button.
-            if (candidate == null) {
-                finish()
-            } else {
-                candidate = null
-                showWaiting()
-            }
+            finish()
             return true
         }
 
         if (keyCode in KeyBindings.RESERVED) {
-            // Never touch the candidate slot here. Writing a refusal where the chosen key is
-            // displayed made a rejection look like a reassignment.
+            // Never write a refusal into the slot that shows the chosen key: doing that made a
+            // rejection read as a reassignment.
             note.text = "${KeyEvent.keyCodeToString(keyCode)} (code $keyCode) is needed for " +
                 "typing and cannot be assigned."
             note.visibility = View.VISIBLE
             return true
         }
 
-        note.visibility = View.GONE
-
-        if (candidate == keyCode) {
-            preferences.assign(binding, keyCode)
-            candidate = null
-            stateLabel.text = "SAVED"
-            assignedValue.text = assignedText()
-            footer.text = FOOTER_SAVED
+        // Only the first acceptable press counts. Staying open to reassignment turned a glance
+        // at the result into a way of changing it by accident.
+        if (captured) {
             return true
         }
 
-        candidate = keyCode
-        stateLabel.text = "PRESS AGAIN TO SAVE"
+        captured = true
+        preferences.assign(binding, keyCode)
+        note.visibility = View.GONE
+        stateLabel.text = "ASSIGNED"
         keyName.text = KeyEvent.keyCodeToString(keyCode)
         keyDetail.text = "code $keyCode"
-        footer.text = FOOTER_CANDIDATE
+        assignedValue.text = assignedText()
+        footer.text = FOOTER_SAVED
         return true
-    }
-
-    private fun showWaiting() {
-        stateLabel.text = "WAITING"
-        keyName.text = "Press the button"
-        keyDetail.text = ""
-        note.visibility = View.GONE
-        footer.text = FOOTER_WAITING
     }
 
     private fun assignedText(): String {
@@ -192,9 +175,9 @@ class KeyCaptureActivity : Activity() {
     companion object {
         const val EXTRA_BINDING = "binding"
 
-        private const val FOOTER_WAITING = "BACK leaves without changing anything."
-        private const val FOOTER_CANDIDATE =
-            "Press the same button again to save it. BACK discards it. Another button replaces it."
+        private const val FOOTER_WAITING =
+            "The first button you press is the one that gets assigned. BACK leaves without " +
+                "changing anything."
         private const val FOOTER_SAVED = "Saved. BACK returns to settings."
 
         private const val BACKGROUND = 0xFF08080B.toInt()
