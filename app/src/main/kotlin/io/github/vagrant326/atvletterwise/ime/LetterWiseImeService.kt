@@ -66,16 +66,22 @@ class LetterWiseImeService : InputMethodService() {
             return super.onKeyDown(keyCode, event)
         }
 
-        val action = KeyBindings.of(keyCode, longPress = event.repeatCount > 0)
+        val action = KeyBindings.of(keyCode, event.repeatCount, preferences.languageKeyCode)
             ?: return super.onKeyDown(keyCode, event)
+
+        if (action == Action.Ignore) {
+            return true
+        }
+
+        if (showLanguageChooser && handleChooser(action)) {
+            render()
+            return true
+        }
 
         if (action !is Action.Punctuation) {
             punctuationIndex = -1
         }
-        // Any key that is not part of choosing a language puts the chooser away.
-        if (action != Action.NextLanguage && action != Action.ShowLanguages) {
-            showLanguageChooser = false
-        }
+        showLanguageChooser = false
 
         when (action) {
             is Action.Group -> composer.pressGroup(action.key)
@@ -84,8 +90,9 @@ class LetterWiseImeService : InputMethodService() {
             Action.PreviousCandidate -> composer.previousCandidate()
             Action.Accept -> composer.accept()
             Action.Punctuation -> cyclePunctuation()
-            Action.NextLanguage -> nextLanguage()
+            Action.NextLanguage -> stepLanguage(1)
             Action.ShowLanguages -> showLanguageChooser = true
+            Action.Ignore -> Unit
 
             Action.Backspace -> {
                 if (!composer.backspace()) {
@@ -128,18 +135,31 @@ class LetterWiseImeService : InputMethodService() {
     }
 
     /**
-     * Cycles through the languages the user enabled, not through everything the app knows.
-     * Cycling is only usable while that list is short - the point of the long press is to
-     * give a route that still works when it is not.
+     * While the list is open the language changes live, so up and down are the whole
+     * interaction and there is nothing to confirm. Returns false for keys that should close
+     * the list and then be handled normally.
      */
-    private fun nextLanguage() {
+    private fun handleChooser(action: Action): Boolean = when (action) {
+        Action.NextCandidate -> { stepLanguage(-1); true }
+        Action.PreviousCandidate -> { stepLanguage(1); true }
+        Action.NextLanguage, Action.ShowLanguages -> { stepLanguage(1); true }
+        Action.Accept, Action.Enter, Action.Dismiss -> { showLanguageChooser = false; true }
+        else -> false
+    }
+
+    /**
+     * Steps through the languages the user enabled, not through everything the app knows.
+     * Cycling is only usable while that list is short, which is what the list view is for.
+     */
+    private fun stepLanguage(delta: Int) {
         val enabled = preferences.enabledLanguages
-        if (enabled.size > 1) {
-            val index = enabled.indexOf(language)
-            language = enabled[(index + 1) % enabled.size]
-            preferences.activeLanguage = language
-            composer.useDisambiguator(disambiguatorFor(language))
+        if (enabled.size < 2) {
+            return
         }
+        val index = enabled.indexOf(language).coerceAtLeast(0)
+        language = enabled[(index + delta + enabled.size) % enabled.size]
+        preferences.activeLanguage = language
+        composer.useDisambiguator(disambiguatorFor(language))
     }
 
     private fun disambiguatorFor(language: Language) =

@@ -1,6 +1,8 @@
 package io.github.vagrant326.atvletterwise.settings
 
 import android.content.Context
+import android.view.KeyEvent
+import io.github.vagrant326.atvletterwise.ime.KeyBindings
 import io.github.vagrant326.atvletterwise.model.Language
 
 /** How much of the key mapping the strip spells out. */
@@ -78,6 +80,20 @@ class Preferences(context: Context) {
         return true
     }
 
+    /**
+     * The button the user picked for switching language, captured by [KeyCaptureActivity].
+     * Defaults to `*`, which is where a phone keypad has its spare key - but plenty of TV
+     * remotes put something else there and report a different keycode, so the default is a
+     * guess and the capture screen is the answer.
+     */
+    var languageKeyCode: Int
+        get() = store.getInt(KEY_LANGUAGE_KEYCODE, KeyEvent.KEYCODE_STAR)
+        set(value) = store.edit().putInt(KEY_LANGUAGE_KEYCODE, value).apply()
+
+    fun clearLanguageKey() {
+        store.edit().putInt(KEY_LANGUAGE_KEYCODE, KeyBindings.NO_KEY).apply()
+    }
+
     /** Survives restarts: the language is a mode, and a mode that silently resets is a trap. */
     var activeLanguage: Language
         get() = store.getString(KEY_ACTIVE_LANGUAGE, null)
@@ -91,5 +107,6 @@ class Preferences(context: Context) {
         const val KEY_HINT_MODE = "hint_mode"
         const val KEY_ENABLED_LANGUAGES = "enabled_languages"
         const val KEY_ACTIVE_LANGUAGE = "active_language"
+        const val KEY_LANGUAGE_KEYCODE = "language_keycode"
     }
 }

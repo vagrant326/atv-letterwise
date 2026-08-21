@@ -18,6 +18,7 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import io.github.vagrant326.atvletterwise.BuildConfig
+import android.view.KeyEvent
 import io.github.vagrant326.atvletterwise.model.Language
 import io.github.vagrant326.atvletterwise.update.UpdateActivity
 
@@ -51,6 +52,18 @@ class SettingsActivity : Activity() {
         content.addView(hintModeRow())
         content.addView(sectionLabel("Languages"))
         content.addView(languageRows())
+        content.addView(
+            navigationRow("Pick the language button on your remote") {
+                startActivity(Intent(this, KeyCaptureActivity::class.java))
+            }
+        )
+        content.addView(
+            caption(
+                "Remotes disagree about what sits where a phone has *, and about what it " +
+                    "reports. Press the button you want and it gets recorded. Long press on " +
+                    "1 opens the language list either way."
+            )
+        )
         content.addView(sectionLabel("System"))
         content.addView(
             navigationRow("Android keyboard settings") {
