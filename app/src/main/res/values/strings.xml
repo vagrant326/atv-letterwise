@@ -1,8 +1,127 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">atv-letterwise</string>
-    <string name="ime_name">LetterWise</string>
+    <!-- Names and pure formats. A language is called the same thing in every locale, and a
+         percentage has nothing to translate. -->
+    <string name="app_name" translatable="false">atv-letterwise</string>
+    <string name="ime_name" translatable="false">LetterWise</string>
+    <string name="subtype_pl" translatable="false">Polski</string>
+    <string name="subtype_en" translatable="false">English</string>
+    <string name="language_pl" translatable="false">Polski</string>
+    <string name="language_en" translatable="false">English</string>
+    <string name="capture_no_key" translatable="false">—</string>
+    <string name="update_working" translatable="false">…</string>
+    <string name="update_percent" translatable="false">%1$d%%</string>
+    <string name="update_installing_headline" translatable="false">%1$d kB</string>
+
     <string name="update_name">LetterWise updates</string>
-    <string name="subtype_pl">Polski</string>
-    <string name="subtype_en">English</string>
+
+    <string name="hint_keypad">Keypad</string>
+    <string name="hint_keypad_description">Phone layout with letters on every key. Clearest, and the tallest.</string>
+    <string name="hint_inline">One line</string>
+    <string name="hint_inline_description">Compact 2:abc list on a single row.</string>
+    <string name="hint_off">Off</string>
+    <string name="hint_off_description">Nothing. The keys on your remote have no letters on them, so nothing will remind you.</string>
+
+    <string name="binding_language">Language button</string>
+    <string name="binding_language_prompt">Press the button you want for switching language</string>
+    <string name="binding_language_fallback">Holding 1 opens the language list either way.</string>
+    <string name="binding_delete">Delete button</string>
+    <string name="binding_delete_prompt">Press the button you want for deleting</string>
+    <string name="binding_delete_fallback">Holding left deletes either way.</string>
+
+    <string name="settings_version">Version %1$s</string>
+    <string name="settings_section_keyboard">Keyboard</string>
+    <string name="settings_section_languages">Languages</string>
+    <string name="settings_section_buttons">Buttons</string>
+    <string name="settings_section_system">System</string>
+    <string name="settings_section_updates">Updates</string>
+    <string name="settings_section_typing">How to type</string>
+    <string name="settings_section_try">Try it</string>
+    <string name="settings_key_hint">Key hint</string>
+    <string name="settings_language_note">The language button cycles through the ones you tick, in this order.</string>
+    <string name="settings_language_minimum">At least one language has to stay on.</string>
+    <string name="settings_buttons_note">Remotes disagree about which buttons exist and about what they report. Press the button you want and it gets recorded. Both functions stay reachable without this.</string>
+    <string name="settings_binding_row">%1$s: %2$s</string>
+    <string name="settings_binding_unset">not set</string>
+    <string name="settings_system_keyboard">Android keyboard settings</string>
+    <string name="settings_system_keyboard_note">Leaves this app. Enable or switch the active keyboard there.</string>
+    <string name="settings_check_updates">Check for updates</string>
+    <string name="settings_updates_note">The only thing here that uses the network. It runs in a separate process, only when you press it, and sends nothing. What you type never leaves the device.</string>
+    <string name="settings_typing_note">2-9 pick a letter group. 0 is space. 1 is punctuation, and holding it opens the language list. Up and down walk the alternatives, and so do channel up and down. Left and right move the caret. Holding left deletes. Centre submits, back closes.\n\nAccept is optional: pressing the next group key accepts the previous letter on its own.</string>
+    <string name="settings_scratch_hint">Type here</string>
+    <string name="settings_scratch_note">Focus this field to bring the keyboard up. Nothing here is saved.</string>
+
+    <string name="capture_choose">Choose button</string>
+    <string name="capture_save">Save</string>
+    <string name="capture_clear">Clear</string>
+    <string name="capture_state_none">NO SELECTION</string>
+    <string name="capture_state_listening">PRESS A BUTTON</string>
+    <string name="capture_state_selected">SELECTED</string>
+    <string name="capture_state_unusable">CANNOT BE USED</string>
+    <string name="capture_state_saved">SAVED</string>
+    <string name="capture_waiting">Waiting…</string>
+    <string name="capture_code">code %1$d</string>
+    <string name="capture_reserved">The keyboard needs this button for typing, so it cannot be assigned. Choose again and press a different one.</string>
+    <string name="capture_assigned_label">ASSIGNED NOW</string>
+    <string name="capture_assigned_none">Nothing</string>
+    <string name="capture_assigned_value">%1$s  ·  code %2$d</string>
+    <string name="capture_footer_idle">BACK returns to settings.</string>
+    <string name="capture_footer_listening">The next button you press is the one taken. BACK cancels.</string>
+    <string name="capture_footer_saved">Saved. BACK returns to settings.</string>
+
+    <string name="update_title">Updates</string>
+    <string name="update_subtitle">LetterWise installs from its GitHub releases.</string>
+    <string name="update_state_checking">CHECKING</string>
+    <string name="update_state_uptodate">UP TO DATE</string>
+    <string name="update_state_available">AVAILABLE</string>
+    <string name="update_state_none">NOTHING PUBLISHED</string>
+    <string name="update_state_failed">COULD NOT CHECK</string>
+    <string name="update_state_downloading">DOWNLOADING</string>
+    <string name="update_state_installing">INSTALLING</string>
+    <string name="update_state_done">DONE</string>
+    <string name="update_state_error">FAILED</string>
+    <string name="update_state_permission">PERMISSION NEEDED</string>
+    <string name="update_uptodate_body">Nothing newer has been released.</string>
+    <string name="update_none_headline">No releases</string>
+    <string name="update_none_body">This repository has no releases yet.</string>
+    <string name="update_failed_headline">Check failed</string>
+    <string name="update_available_body">Installed %1$s.</string>
+    <string name="update_download">Download and install</string>
+    <string name="update_check_again">Check again</string>
+    <string name="update_try_again">Try again</string>
+    <string name="update_busy">Working…</string>
+    <string name="update_downloading_failed">Download failed</string>
+    <string name="update_installing_body">Handing the file to the system installer.</string>
+    <string name="update_installed_headline">Installed</string>
+    <string name="update_installed_body">Android stops an app when it replaces it, so this screen will close. The keyboard itself keeps working — reopen the app only to change settings.</string>
+    <string name="update_install_failed">Install failed</string>
+    <string name="update_install_status">status %1$d\n%2$s</string>
+    <string name="update_no_detail">no detail</string>
+    <string name="update_start_failed">Could not start the install</string>
+    <string name="update_no_dialog_headline">No confirmation dialog</string>
+    <string name="update_no_dialog_body">The system asked for confirmation but did not say what to show.</string>
+    <string name="update_dialog_failed">Could not open the dialog</string>
+    <string name="update_problem">PROBLEM</string>
+    <string name="update_permission_headline">Allow installing</string>
+    <string name="update_permission_body">Android needs your permission for this app to install packages.</string>
+    <string name="update_permission_open">Open the permission screen</string>
+    <string name="update_install">Install</string>
+    <string name="update_installed_label">INSTALLED</string>
+    <string name="update_privacy">Checked only when you press it. One request for the version, one for the file, nothing sent. What you type never leaves the device.</string>
+    <string name="update_relaunch">Reopen after update: %1$s</string>
+    <string name="update_back">BACK returns to settings.</string>
+    <string name="update_relaunch_never">never seen</string>
+
+    <string name="strip_no_model">%1$s no model</string>
+    <string name="strip_press_keys">press 2-9</string>
+    <string name="strip_chooser_hint">up / down</string>
+    <string name="strip_hint_language">language</string>
+    <string name="strip_hint_delete">delete</string>
+    <string name="strip_hint_caret">caret</string>
+    <string name="strip_hint_submit">submit</string>
+    <string name="strip_caret_keys">left / right</string>
+    <string name="strip_submit_key">centre</string>
+    <string name="strip_fallback_language">hold 1</string>
+    <string name="strip_fallback_delete">hold left</string>
+    <string name="strip_space">space</string>
 </resources>

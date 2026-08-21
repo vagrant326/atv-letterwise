@@ -13,20 +13,21 @@ import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import io.github.vagrant326.atvletterwise.R
 import io.github.vagrant326.atvletterwise.ime.KeyBindings
 
 /**
  * Puts a keyboard function on a button of the user's choosing.
  *
- * This exists because remotes disagree about what physically exists and about what it
- * reports. On this remote the key sitting where a phone has `*` is printed `TEXT` and sends a
- * keycode outside the standard range. Nothing in the app can discover that; only the user
- * pressing the button can, and guessing produced a function that could not be reached at all
- * — worse than an absent one, because it looks implemented.
+ * This exists because remotes disagree about what physically exists and about what it reports.
+ * On this remote the key sitting where a phone has `*` is printed `TEXT` and sends a keycode
+ * outside the standard range. Nothing in the app can discover that; only the user pressing the
+ * button can, and guessing produced a function that could not be reached at all — worse than
+ * an absent one, because it looks implemented.
  *
- * Listening for a raw key is a brief state rather than the screen's permanent mode, and that
- * is what lets ordinary focusable buttons live here. An earlier version listened all the time
- * and the d-pad never reached the buttons, so trying to move between them looked like it was
+ * Listening for a raw key is a brief state rather than the screen's permanent mode, and that is
+ * what lets ordinary focusable buttons live here. An earlier version listened all the time and
+ * the d-pad never reached the buttons, so trying to move between them looked like it was
  * reassigning the key.
  *
  * Driven entirely by [Binding], so putting another function on a user-chosen button costs one
@@ -57,11 +58,11 @@ class KeyCaptureActivity : Activity() {
         binding = Binding.entries.firstOrNull { it.name == intent.getStringExtra(EXTRA_BINDING) }
             ?: Binding.LANGUAGE
 
-        stateLabel = label("NO SELECTION", MUTED, 12f)
-        keyName = label("—", Color.WHITE, 30f)
+        stateLabel = label(getString(R.string.capture_state_none), MUTED, 12f)
+        keyName = label(getString(R.string.capture_no_key), Color.WHITE, 30f)
         keyDetail = label("", SECONDARY, 15f)
         note = label("", WARNING, 14f).apply { visibility = View.GONE }
-        footer = label(FOOTER_IDLE, MUTED, 13f)
+        footer = label(getString(R.string.capture_footer_idle), MUTED, 13f)
         assignedValue = label(assignedText(), SECONDARY, 15f)
 
         targetCard = LinearLayout(this).apply {
@@ -77,11 +78,11 @@ class KeyCaptureActivity : Activity() {
 
         // Choose sits above the code it produces, save and clear below it: the order the user
         // moves through, rather than three buttons in a row with no relation to the reading.
-        chooseButton = action("Choose button") { startListening() }.apply {
+        chooseButton = action(getString(R.string.capture_choose)) { startListening() }.apply {
             layoutParams = stack(dp(20))
         }
-        saveButton = action("Save") { save() }
-        clearButton = action("Clear") { clear() }
+        saveButton = action(getString(R.string.capture_save)) { save() }
+        clearButton = action(getString(R.string.capture_clear)) { clear() }
 
         val actions = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -95,16 +96,22 @@ class KeyCaptureActivity : Activity() {
             background = card(SUNKEN)
             setPadding(dp(24), dp(16), dp(24), dp(18))
             layoutParams = stack(dp(16))
-            addView(label("ASSIGNED NOW", MUTED, 12f))
+            addView(label(getString(R.string.capture_assigned_label), MUTED, 12f))
             addView(assignedValue.apply { setPadding(0, dp(4), 0, 0) })
-            addView(label(binding.fallback, MUTED, 13f).apply { setPadding(0, dp(8), 0, 0) })
+            addView(
+                label(getString(binding.fallbackRes), MUTED, 13f)
+                    .apply { setPadding(0, dp(8), 0, 0) }
+            )
         }
 
         val content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(dp(640), ViewGroup.LayoutParams.WRAP_CONTENT)
-            addView(label(binding.title, Color.WHITE, 28f))
-            addView(label(binding.prompt, SECONDARY, 15f).apply { setPadding(0, dp(6), 0, 0) })
+            addView(label(getString(binding.titleRes), Color.WHITE, 28f))
+            addView(
+                label(getString(binding.promptRes), SECONDARY, 15f)
+                    .apply { setPadding(0, dp(6), 0, 0) }
+            )
             addView(chooseButton)
             addView(targetCard)
             addView(actions)
@@ -134,18 +141,18 @@ class KeyCaptureActivity : Activity() {
         listening = true
         candidate = null
         targetCard.background = card(CARD_LISTENING)
-        stateLabel.text = "PRESS A BUTTON"
-        keyName.text = "Waiting…"
+        stateLabel.text = getString(R.string.capture_state_listening)
+        keyName.text = getString(R.string.capture_waiting)
         keyDetail.text = ""
         note.visibility = View.GONE
-        footer.text = FOOTER_LISTENING
+        footer.text = getString(R.string.capture_footer_listening)
         updateActions()
     }
 
     private fun stopListening() {
         listening = false
         targetCard.background = card(CARD)
-        footer.text = FOOTER_IDLE
+        footer.text = getString(R.string.capture_footer_idle)
         updateActions()
     }
 
@@ -164,8 +171,8 @@ class KeyCaptureActivity : Activity() {
         }
 
         if (keyCode == KeyEvent.KEYCODE_BACK) {
-            stateLabel.text = "NO SELECTION"
-            keyName.text = "—"
+            stateLabel.text = getString(R.string.capture_state_none)
+            keyName.text = getString(R.string.capture_no_key)
             stopListening()
             return true
         }
@@ -174,15 +181,14 @@ class KeyCaptureActivity : Activity() {
         // refused key is the point: it answers "did it even see my button".
         candidate = keyCode
         keyName.text = KeyEvent.keyCodeToString(keyCode)
-        keyDetail.text = "code $keyCode"
+        keyDetail.text = getString(R.string.capture_code, keyCode)
 
         if (keyCode in KeyBindings.RESERVED) {
-            stateLabel.text = "CANNOT BE USED"
-            note.text = "The keyboard needs this button for typing, so it cannot be assigned. " +
-                "Choose again and press a different one."
+            stateLabel.text = getString(R.string.capture_state_unusable)
+            note.text = getString(R.string.capture_reserved)
             note.visibility = View.VISIBLE
         } else {
-            stateLabel.text = "SELECTED"
+            stateLabel.text = getString(R.string.capture_state_selected)
             note.visibility = View.GONE
         }
         stopListening()
@@ -193,16 +199,16 @@ class KeyCaptureActivity : Activity() {
         val code = candidate ?: return
         preferences.assign(binding, code)
         assignedValue.text = assignedText()
-        stateLabel.text = "SAVED"
-        footer.text = FOOTER_SAVED
+        stateLabel.text = getString(R.string.capture_state_saved)
+        footer.text = getString(R.string.capture_footer_saved)
     }
 
     private fun clear() {
         preferences.assign(binding, KeyBindings.NO_KEY)
         candidate = null
         assignedValue.text = assignedText()
-        stateLabel.text = "NO SELECTION"
-        keyName.text = "—"
+        stateLabel.text = getString(R.string.capture_state_none)
+        keyName.text = getString(R.string.capture_no_key)
         keyDetail.text = ""
         note.visibility = View.GONE
         updateActions()
@@ -210,8 +216,7 @@ class KeyCaptureActivity : Activity() {
 
     private fun updateActions() {
         val selected = candidate
-        val canSave = !listening && selected != null && selected !in KeyBindings.RESERVED
-        enable(saveButton, canSave)
+        enable(saveButton, !listening && selected != null && selected !in KeyBindings.RESERVED)
         enable(clearButton, !listening && preferences.keyCodeFor(binding) != KeyBindings.NO_KEY)
         enable(chooseButton, !listening)
     }
@@ -225,9 +230,9 @@ class KeyCaptureActivity : Activity() {
     private fun assignedText(): String {
         val code = preferences.keyCodeFor(binding)
         return if (code == KeyBindings.NO_KEY) {
-            "Nothing"
+            getString(R.string.capture_assigned_none)
         } else {
-            "${KeyEvent.keyCodeToString(code)}  ·  code $code"
+            getString(R.string.capture_assigned_value, KeyEvent.keyCodeToString(code), code)
         }
     }
 
@@ -267,11 +272,6 @@ class KeyCaptureActivity : Activity() {
 
     companion object {
         const val EXTRA_BINDING = "binding"
-
-        private const val FOOTER_IDLE = "BACK returns to settings."
-        private const val FOOTER_LISTENING =
-            "The next button you press is the one taken. BACK cancels."
-        private const val FOOTER_SAVED = "Saved. BACK returns to settings."
 
         private const val BACKGROUND = 0xFF08080B.toInt()
         private const val CARD = 0xFF16161C.toInt()

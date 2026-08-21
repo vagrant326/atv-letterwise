@@ -9,6 +9,7 @@ import android.provider.Settings
 import android.text.InputType
 import android.util.TypedValue
 import android.view.Gravity
+import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
@@ -18,7 +19,7 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import io.github.vagrant326.atvletterwise.BuildConfig
-import android.view.KeyEvent
+import io.github.vagrant326.atvletterwise.R
 import io.github.vagrant326.atvletterwise.ime.KeyBindings
 import io.github.vagrant326.atvletterwise.model.Language
 import io.github.vagrant326.atvletterwise.update.UpdateActivity
@@ -46,63 +47,43 @@ class SettingsActivity : Activity() {
             layoutParams = LinearLayout.LayoutParams(dp(680), ViewGroup.LayoutParams.WRAP_CONTENT)
         }
 
-        content.addView(heading("LetterWise"))
-        content.addView(caption("Version ${BuildConfig.VERSION_NAME}"))
+        content.addView(heading(getString(R.string.ime_name)))
+        content.addView(caption(getString(R.string.settings_version, BuildConfig.VERSION_NAME)))
 
-        content.addView(sectionLabel("Keyboard"))
+        content.addView(sectionLabel(getString(R.string.settings_section_keyboard)))
         content.addView(hintModeRow())
-        content.addView(sectionLabel("Languages"))
+
+        content.addView(sectionLabel(getString(R.string.settings_section_languages)))
         content.addView(languageRows())
-        content.addView(sectionLabel("Buttons"))
+
+        content.addView(sectionLabel(getString(R.string.settings_section_buttons)))
         for (binding in Binding.entries) {
             content.addView(captureRow(binding))
         }
+        content.addView(caption(getString(R.string.settings_buttons_note)))
+
+        content.addView(sectionLabel(getString(R.string.settings_section_system)))
         content.addView(
-            caption(
-                "Remotes disagree about which buttons exist and about what they report - the " +
-                    "key printed TEXT here sends keycode 300. Press the button you want and " +
-                    "it gets recorded. Both functions stay reachable without this."
-            )
-        )
-        content.addView(sectionLabel("System"))
-        content.addView(
-            navigationRow("Android keyboard settings") {
+            navigationRow(getString(R.string.settings_system_keyboard)) {
                 startActivity(Intent(Settings.ACTION_INPUT_METHOD_SETTINGS))
             }
         )
-        content.addView(caption("Leaves this app. Enable or switch the active keyboard there."))
+        content.addView(caption(getString(R.string.settings_system_keyboard_note)))
 
-        content.addView(sectionLabel("Updates"))
+        content.addView(sectionLabel(getString(R.string.settings_section_updates)))
         content.addView(
-            row("Check for updates", "") {
+            row(getString(R.string.settings_check_updates), "") {
                 startActivity(Intent(this, UpdateActivity::class.java))
             }
         )
-        content.addView(
-            caption(
-                "The only thing here that uses the network. Runs in a separate process, " +
-                    "only when you press it, and sends nothing. What you type never leaves " +
-                    "the device."
-            )
-        )
+        content.addView(caption(getString(R.string.settings_updates_note)))
 
-        content.addView(sectionLabel("How to type"))
-        content.addView(
-            caption(
-                "2-9 pick a letter group. 0 is space. 1 is punctuation. * switches language, " +
-                    "long press lists them; long press on 1 does the same, for remotes with " +
-                    "no * key. Up and down walk the alternatives, right accepts, left " +
-                    "deletes, centre submits, back closes.\n\n" +
-                    "Accept is optional: pressing the next group key accepts the previous " +
-                    "letter on its own."
-            )
-        )
+        content.addView(sectionLabel(getString(R.string.settings_section_typing)))
+        content.addView(caption(getString(R.string.settings_typing_note)))
 
-        content.addView(sectionLabel("Try it"))
+        content.addView(sectionLabel(getString(R.string.settings_section_try)))
         content.addView(scratchField())
-        content.addView(
-            caption("Focus this field to bring the keyboard up. Nothing here is saved.")
-        )
+        content.addView(caption(getString(R.string.settings_scratch_note)))
 
         setContentView(
             ScrollView(this).apply {
@@ -120,15 +101,15 @@ class SettingsActivity : Activity() {
     }
 
     /**
-     * Somewhere to try the keyboard without leaving the app and without editing anything
-     * real. Not persisted and not read by anything.
+     * Somewhere to try the keyboard without leaving the app and without editing anything real.
+     * Not persisted and not read by anything.
      *
      * The explicit focus flags and `showSoftInput` are not decoration: on a TV there is no
-     * touch, so a field that does not take d-pad focus cannot be reached at all, and
-     * focusing one does not always raise the IME on its own.
+     * touch, so a field that does not take d-pad focus cannot be reached at all, and focusing
+     * one does not always raise the IME on its own.
      */
     private fun scratchField() = EditText(this).apply {
-        hint = "Type here"
+        hint = getString(R.string.settings_scratch_hint)
         inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
         imeOptions = EditorInfo.IME_ACTION_DONE
         setTextColor(Color.WHITE)
@@ -162,17 +143,16 @@ class SettingsActivity : Activity() {
         lateinit var value: TextView
         lateinit var explain: TextView
 
-        fun apply() {
-            value.text = preferences.hintMode.label
-            explain.text = preferences.hintMode.description
-        }
-
-        control = row("Key hint", preferences.hintMode.label) {
+        control = row(
+            getString(R.string.settings_key_hint),
+            getString(preferences.hintMode.labelRes),
+        ) {
             preferences.hintMode = preferences.hintMode.next()
-            apply()
+            value.text = getString(preferences.hintMode.labelRes)
+            explain.text = getString(preferences.hintMode.descriptionRes)
         }
         value = control.getChildAt(1) as TextView
-        explain = caption(preferences.hintMode.description)
+        explain = caption(getString(preferences.hintMode.descriptionRes))
 
         return LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -188,18 +168,18 @@ class SettingsActivity : Activity() {
      */
     private fun languageRows(): View {
         val container = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        val note = caption(LANGUAGE_NOTE)
+        val note = caption(getString(R.string.settings_language_note))
 
         for (language in Language.entries) {
             lateinit var control: LinearLayout
             lateinit var mark: TextView
 
-            control = row(language.title, checkbox(preferences.isEnabled(language))) {
+            control = row(getString(language.titleRes), checkbox(preferences.isEnabled(language))) {
                 if (preferences.toggle(language)) {
                     mark.text = checkbox(preferences.isEnabled(language))
-                    note.text = LANGUAGE_NOTE
+                    note.text = getString(R.string.settings_language_note)
                 } else {
-                    note.text = "At least one language has to stay on."
+                    note.text = getString(R.string.settings_language_minimum)
                 }
             }
             mark = control.getChildAt(1) as TextView
@@ -214,11 +194,12 @@ class SettingsActivity : Activity() {
     private fun captureRow(binding: Binding): View {
         val code = preferences.keyCodeFor(binding)
         val value = if (code == KeyBindings.NO_KEY) {
-            "not set"
+            getString(R.string.settings_binding_unset)
         } else {
             KeyEvent.keyCodeToString(code).removePrefix("KEYCODE_")
         }
-        return navigationRow("${binding.title}: $value") {
+        val label = getString(R.string.settings_binding_row, getString(binding.titleRes), value)
+        return navigationRow(label) {
             startActivity(
                 Intent(this, KeyCaptureActivity::class.java)
                     .putExtra(KeyCaptureActivity.EXTRA_BINDING, binding.name)
@@ -322,9 +303,6 @@ class SettingsActivity : Activity() {
     private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
 
     private companion object {
-        const val LANGUAGE_NOTE =
-            "The language button cycles through the ones you tick, in this order."
-
         const val BACKGROUND = 0xFF08080B.toInt()
         const val ROW = 0xFF16161C.toInt()
         const val ROW_FOCUSED = 0xFF2A3A46.toInt()

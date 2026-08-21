@@ -23,6 +23,7 @@ import android.widget.ScrollView
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import io.github.vagrant326.atvletterwise.BuildConfig
+import io.github.vagrant326.atvletterwise.R
 import io.github.vagrant326.atvletterwise.settings.Preferences
 import java.io.File
 import java.io.FileNotFoundException
@@ -54,8 +55,8 @@ private sealed interface Check {
  * and a message, and hands us the confirmation dialog explicitly instead of leaving it to
  * chance.
  *
- * All of it exists only because sideloading has no update channel. It comes out if the
- * project ever ships through a store.
+ * All of it exists only because sideloading has no update channel. It comes out if the project
+ * ever ships through a store.
  */
 class UpdateActivity : Activity() {
 
@@ -67,7 +68,6 @@ class UpdateActivity : Activity() {
     private lateinit var secondary: Button
 
     private val worker = Executors.newSingleThreadExecutor()
-    private var downloaded: File? = null
 
     private val installResult = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -78,23 +78,30 @@ class UpdateActivity : Activity() {
                     @Suppress("DEPRECATION")
                     val confirm = intent.getParcelableExtra<Intent>(Intent.EXTRA_INTENT)
                     if (confirm == null) {
-                        show("PROBLEM", "No confirmation dialog", "The system asked for " +
-                            "confirmation but did not say what to show.", CARD_WARNING)
+                        show(
+                            getString(R.string.update_problem),
+                            getString(R.string.update_no_dialog_headline),
+                            getString(R.string.update_no_dialog_body),
+                            CARD_WARNING,
+                        )
                         return
                     }
                     confirm.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     runCatching { startActivity(confirm) }.onFailure {
-                        show("PROBLEM", "Could not open the dialog", it.javaClass.simpleName, CARD_WARNING)
+                        show(
+                            getString(R.string.update_problem),
+                            getString(R.string.update_dialog_failed),
+                            it.javaClass.simpleName,
+                            CARD_WARNING,
+                        )
                     }
                 }
 
                 PackageInstaller.STATUS_SUCCESS -> {
                     show(
-                        "DONE",
-                        "Installed",
-                        "Android stops an app when it replaces it, so this screen will close. " +
-                            "The keyboard itself keeps working — reopen the app only to change " +
-                            "settings.",
+                        getString(R.string.update_state_done),
+                        getString(R.string.update_installed_headline),
+                        getString(R.string.update_installed_body),
                         CARD_OK,
                     )
                     primary.visibility = View.GONE
@@ -103,8 +110,14 @@ class UpdateActivity : Activity() {
 
                 else -> {
                     val message = intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE)
-                    show("FAILED", "Install failed", "status $code\n${message ?: "no detail"}", CARD_WARNING)
-                    offerPrimary("Try again") { download() }
+                        ?: getString(R.string.update_no_detail)
+                    show(
+                        getString(R.string.update_state_error),
+                        getString(R.string.update_install_failed),
+                        getString(R.string.update_install_status, code, message),
+                        CARD_WARNING,
+                    )
+                    offerPrimary(getString(R.string.update_try_again)) { download() }
                 }
             }
         }
@@ -113,8 +126,8 @@ class UpdateActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        stateLabel = label("CHECKING", MUTED, 12f)
-        headline = label("…", Color.WHITE, 30f)
+        stateLabel = label(getString(R.string.update_state_checking), MUTED, 12f)
+        headline = label(getString(R.string.update_working), Color.WHITE, 30f)
         detail = label("", SECONDARY, 15f)
 
         stateCard = LinearLayout(this).apply {
@@ -127,8 +140,9 @@ class UpdateActivity : Activity() {
             addView(detail.apply { setPadding(0, dp(8), 0, 0) })
         }
 
-        primary = action("…") {}.apply { visibility = View.GONE }
-        secondary = action("Check again") { check(async = true) }.apply { visibility = View.GONE }
+        primary = action(getString(R.string.update_working)) {}.apply { visibility = View.GONE }
+        secondary = action(getString(R.string.update_check_again)) { check() }
+            .apply { visibility = View.GONE }
 
         val actions = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -137,46 +151,42 @@ class UpdateActivity : Activity() {
             addView(secondary)
         }
 
+        val relaunch = Preferences(this).lastRelaunch
+            ?: getString(R.string.update_relaunch_never)
+
         val installedCard = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             background = card(SUNKEN)
             setPadding(dp(24), dp(16), dp(24), dp(18))
             layoutParams = stack(dp(16))
-            addView(label("INSTALLED", MUTED, 12f))
+            addView(label(getString(R.string.update_installed_label), MUTED, 12f))
             addView(
                 label(BuildConfig.VERSION_NAME, SECONDARY, 15f)
                     .apply { setPadding(0, dp(4), 0, 0) }
             )
             addView(
-                label(
-                    "Checked only when you press it. One request for the version, one for the " +
-                        "file, nothing sent. What you type never leaves the device.",
-                    MUTED,
-                    13f,
-                ).apply { setPadding(0, dp(8), 0, 0) }
+                label(getString(R.string.update_privacy), MUTED, 13f)
+                    .apply { setPadding(0, dp(8), 0, 0) }
             )
             addView(
-                label(
-                    "Reopen after update: ${Preferences(this@UpdateActivity).lastRelaunch}",
-                    MUTED,
-                    12f,
-                ).apply { setPadding(0, dp(8), 0, 0) }
+                label(getString(R.string.update_relaunch, relaunch), MUTED, 12f)
+                    .apply { setPadding(0, dp(8), 0, 0) }
             )
         }
 
         val content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(dp(640), ViewGroup.LayoutParams.WRAP_CONTENT)
-            addView(label("Updates", Color.WHITE, 28f))
+            addView(label(getString(R.string.update_title), Color.WHITE, 28f))
             addView(
-                label("LetterWise installs from its GitHub releases.", SECONDARY, 15f)
+                label(getString(R.string.update_subtitle), SECONDARY, 15f)
                     .apply { setPadding(0, dp(6), 0, 0) }
             )
             addView(stateCard)
             addView(actions)
             addView(installedCard)
             addView(
-                label("BACK returns to settings.", MUTED, 13f)
+                label(getString(R.string.update_back), MUTED, 13f)
                     .apply { setPadding(0, dp(18), 0, 0) }
             )
         }
@@ -202,7 +212,7 @@ class UpdateActivity : Activity() {
             ContextCompat.RECEIVER_NOT_EXPORTED,
         )
 
-        check(async = true)
+        check()
     }
 
     override fun onDestroy() {
@@ -227,8 +237,12 @@ class UpdateActivity : Activity() {
         primary.requestFocus()
     }
 
-    private fun check(async: Boolean) {
-        show("CHECKING", "…", "")
+    private fun check() {
+        show(
+            getString(R.string.update_state_checking),
+            getString(R.string.update_working),
+            "",
+        )
         primary.visibility = View.GONE
         secondary.visibility = View.GONE
         worker.execute {
@@ -240,39 +254,60 @@ class UpdateActivity : Activity() {
     private fun present(result: Check) {
         secondary.visibility = View.VISIBLE
         when (result) {
-            is Check.UpToDate ->
-                show("UP TO DATE", BuildConfig.VERSION_NAME, "Nothing newer has been released.", CARD_OK)
+            is Check.UpToDate -> show(
+                getString(R.string.update_state_uptodate),
+                BuildConfig.VERSION_NAME,
+                getString(R.string.update_uptodate_body),
+                CARD_OK,
+            )
 
-            is Check.NoReleases ->
-                show("NOTHING PUBLISHED", "No releases", "This repository has no releases yet.")
+            is Check.NoReleases -> show(
+                getString(R.string.update_state_none),
+                getString(R.string.update_none_headline),
+                getString(R.string.update_none_body),
+            )
 
-            is Check.Failed ->
-                show("COULD NOT CHECK", "Check failed", result.detail, CARD_WARNING)
+            is Check.Failed -> show(
+                getString(R.string.update_state_failed),
+                getString(R.string.update_failed_headline),
+                result.detail,
+                CARD_WARNING,
+            )
 
             is Check.Newer -> {
-                show("AVAILABLE", result.tag, "Installed ${BuildConfig.VERSION_NAME}.", CARD_ACCENT)
-                offerPrimary("Download and install") { download() }
+                show(
+                    getString(R.string.update_state_available),
+                    result.tag,
+                    getString(R.string.update_available_body, BuildConfig.VERSION_NAME),
+                    CARD_ACCENT,
+                )
+                offerPrimary(getString(R.string.update_download)) { download() }
             }
         }
     }
 
     private fun download() {
         primary.isEnabled = false
-        primary.text = "Downloading…"
-        show("DOWNLOADING", "0%", "")
+        primary.text = getString(R.string.update_busy)
+        show(
+            getString(R.string.update_state_downloading),
+            getString(R.string.update_percent, 0),
+            "",
+        )
         worker.execute {
             val target = File(cacheDir, "update.apk")
             val outcome = runCatching { fetch(target) }
             runOnUiThread {
                 outcome.fold(
-                    onSuccess = {
-                        downloaded = target
-                        install(target)
-                    },
+                    onSuccess = { install(target) },
                     onFailure = {
-                        show("FAILED", "Download failed", "${it.javaClass.simpleName}\n" +
-                            (it.message ?: ""), CARD_WARNING)
-                        offerPrimary("Try again") { download() }
+                        show(
+                            getString(R.string.update_state_error),
+                            getString(R.string.update_downloading_failed),
+                            "${it.javaClass.simpleName}\n${it.message ?: ""}",
+                            CARD_WARNING,
+                        )
+                        offerPrimary(getString(R.string.update_try_again)) { download() }
                     },
                 )
             }
@@ -302,7 +337,9 @@ class UpdateActivity : Activity() {
                         read += count
                         if (total > 0) {
                             val percent = (read * 100 / total).toInt()
-                            runOnUiThread { headline.text = "$percent%" }
+                            runOnUiThread {
+                                headline.text = getString(R.string.update_percent, percent)
+                            }
                         }
                     }
                 }
@@ -327,26 +364,30 @@ class UpdateActivity : Activity() {
             !packageManager.canRequestPackageInstalls()
         ) {
             show(
-                "PERMISSION NEEDED",
-                "Allow installing",
-                "Android needs your permission for this app to install packages.",
+                getString(R.string.update_state_permission),
+                getString(R.string.update_permission_headline),
+                getString(R.string.update_permission_body),
                 CARD_WARNING,
             )
-            offerPrimary("Open the permission screen") {
+            offerPrimary(getString(R.string.update_permission_open)) {
                 startActivity(
                     Intent(
                         Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
                         Uri.parse("package:$packageName"),
                     )
                 )
-                offerPrimary("Install") { install(apk) }
+                offerPrimary(getString(R.string.update_install)) { install(apk) }
             }
             return
         }
 
-        show("INSTALLING", "${apk.length() / 1024} kB", "Handing the file to the system installer.")
+        show(
+            getString(R.string.update_state_installing),
+            getString(R.string.update_installing_headline, apk.length() / 1024),
+            getString(R.string.update_installing_body),
+        )
         primary.isEnabled = false
-        primary.text = "Working…"
+        primary.text = getString(R.string.update_busy)
 
         runCatching {
             val installer = packageManager.packageInstaller
@@ -362,9 +403,13 @@ class UpdateActivity : Activity() {
                 session.commit(pendingResult(sessionId).intentSender)
             }
         }.onFailure { failure ->
-            show("FAILED", "Could not start the install", "${failure.javaClass.simpleName}\n" +
-                (failure.message ?: ""), CARD_WARNING)
-            offerPrimary("Try again") { download() }
+            show(
+                getString(R.string.update_state_error),
+                getString(R.string.update_start_failed),
+                "${failure.javaClass.simpleName}\n${failure.message ?: ""}",
+                CARD_WARNING,
+            )
+            offerPrimary(getString(R.string.update_try_again)) { download() }
         }
     }
 

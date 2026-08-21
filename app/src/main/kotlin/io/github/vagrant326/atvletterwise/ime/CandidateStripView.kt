@@ -14,6 +14,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
+import io.github.vagrant326.atvletterwise.R
 import io.github.vagrant326.atvletterwise.core.Partition
 import io.github.vagrant326.atvletterwise.settings.HintMode
 
@@ -69,10 +70,20 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
             gravity = Gravity.TOP
             topMargin = dp(2)
         }
-        addView(hintLine("language", languageValue))
-        addView(hintLine("delete", deleteValue))
-        addView(hintLine("caret", hintValue().apply { text = "left / right" }))
-        addView(hintLine("submit", hintValue().apply { text = "centre" }))
+        addView(hintLine(context.getString(R.string.strip_hint_language), languageValue))
+        addView(hintLine(context.getString(R.string.strip_hint_delete), deleteValue))
+        addView(
+            hintLine(
+                context.getString(R.string.strip_hint_caret),
+                hintValue().apply { text = context.getString(R.string.strip_caret_keys) },
+            )
+        )
+        addView(
+            hintLine(
+                context.getString(R.string.strip_hint_submit),
+                hintValue().apply { text = context.getString(R.string.strip_submit_key) },
+            )
+        )
     }
 
     /**
@@ -107,13 +118,20 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
         inlineHint.visibility = if (state.hintMode == HintMode.INLINE) VISIBLE else GONE
 
         if (state.hintMode == HintMode.INLINE) {
+            val space = context.getString(R.string.strip_space)
             inlineHint.text = state.partition.groups.entries
                 .sortedBy { it.key }
-                .joinToString("   ") { "${it.key}:${it.value}" } + "   0:space"
+                .joinToString("   ") { "${it.key}:${it.value}" } + "   0:$space"
         }
         if (keypadVisible) {
-            languageValue.text = keyLabel(state.customKeys.language, "hold 1")
-            deleteValue.text = keyLabel(state.customKeys.delete, "hold left")
+            languageValue.text = keyLabel(
+                state.customKeys.language,
+                context.getString(R.string.strip_fallback_language),
+            )
+            deleteValue.text = keyLabel(
+                state.customKeys.delete,
+                context.getString(R.string.strip_fallback_delete),
+            )
         }
 
         // Highlight the group the current alternatives came from, so the keypad reads as
@@ -170,19 +188,23 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
                 )
             }
             val hint = text.length
-            text.append("up / down")
+            text.append(context.getString(R.string.strip_chooser_hint))
             text.setSpan(ForegroundColorSpan(DIM), hint, text.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
             return text
         }
 
-        val tag = if (state.trained) state.language.label else "${state.language.label} no model"
+        val tag = if (state.trained) {
+            state.language.label
+        } else {
+            context.getString(R.string.strip_no_model, state.language.label)
+        }
         val text = SpannableStringBuilder(tag).append("   ")
         text.setSpan(ForegroundColorSpan(DIM), 0, text.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
 
         val alternatives = state.composer.alternatives
         if (alternatives.isEmpty()) {
             val start = text.length
-            text.append("press 2-9")
+            text.append(context.getString(R.string.strip_press_keys))
             text.setSpan(ForegroundColorSpan(DIM), start, text.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
             return text
         }
@@ -220,7 +242,7 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
     private fun cell(key: Char, partition: Partition): TextView {
         val letters = when (key) {
             ' ' -> ""
-            '0' -> "space"
+            '0' -> context.getString(R.string.strip_space)
             '1' -> ".,-"
             else -> partition.symbolsFor(key)
         }

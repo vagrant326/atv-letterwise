@@ -1,40 +1,40 @@
 package io.github.vagrant326.atvletterwise.settings
 
 import android.content.Context
+import androidx.annotation.StringRes
+import io.github.vagrant326.atvletterwise.R
 import io.github.vagrant326.atvletterwise.ime.CustomKeys
 import io.github.vagrant326.atvletterwise.ime.KeyBindings
 import io.github.vagrant326.atvletterwise.model.Language
 
 /** How much of the key mapping the strip spells out. */
-enum class HintMode(val label: String, val description: String) {
-    KEYPAD(
-        "Keypad",
-        "Phone layout with letters on every key. Clearest, and the tallest.",
-    ),
-    INLINE(
-        "One line",
-        "Compact 2:abc list on a single row.",
-    ),
-    OFF(
-        "Off",
-        "Nothing. The remote's keys have no letters on them, so nothing will remind you.",
-    ),
+enum class HintMode(
+    @StringRes val labelRes: Int,
+    @StringRes val descriptionRes: Int,
+) {
+    KEYPAD(R.string.hint_keypad, R.string.hint_keypad_description),
+    INLINE(R.string.hint_inline, R.string.hint_inline_description),
+    OFF(R.string.hint_off, R.string.hint_off_description),
     ;
 
     fun next(): HintMode = entries[(ordinal + 1) % entries.size]
 }
 
 /** A function the user can put on a button of their choosing. */
-enum class Binding(val title: String, val prompt: String, val fallback: String) {
+enum class Binding(
+    @StringRes val titleRes: Int,
+    @StringRes val promptRes: Int,
+    @StringRes val fallbackRes: Int,
+) {
     LANGUAGE(
-        "Language button",
-        "Press the button you want for switching language",
-        "Long press on 1 opens the language list either way.",
+        R.string.binding_language,
+        R.string.binding_language_prompt,
+        R.string.binding_language_fallback,
     ),
     DELETE(
-        "Delete button",
-        "Press the button you want for deleting",
-        "Long press on left deletes either way.",
+        R.string.binding_delete,
+        R.string.binding_delete_prompt,
+        R.string.binding_delete_fallback,
     ),
 }
 
@@ -53,8 +53,8 @@ class Preferences(context: Context) {
         set(value) = store.edit().putString(KEY_HINT_MODE, value.name).apply()
 
     /**
-     * Which languages the `*` key cycles through, stored per language rather than as a set
-     * of allowed combinations — the combinations grow exponentially with the number of
+     * Which languages the language key cycles through, stored per language rather than as a
+     * set of allowed combinations — the combinations grow exponentially with the number of
      * languages supported, and each one would need naming.
      *
      * Order follows [Language] declaration order so two presses always land in the same
@@ -95,10 +95,8 @@ class Preferences(context: Context) {
     }
 
     /**
-     * The button the user picked for switching language, captured by [KeyCaptureActivity].
-     * Defaults to `*`, which is where a phone keypad has its spare key - but plenty of TV
-     * remotes put something else there and report a different keycode, so the default is a
-     * guess and the capture screen is the answer.
+     * The button the user picked for switching language. There is no sensible default: the key
+     * where a phone has `*` may not exist, and where it does it may report anything.
      */
     var languageKeyCode: Int
         get() = store.getInt(KEY_LANGUAGE_KEYCODE, KeyBindings.NO_KEY)
@@ -106,8 +104,8 @@ class Preferences(context: Context) {
 
     /**
      * Delete needs a key of its own now that left and right move the caret. There is no
-     * default that exists on every remote, so `DEL` is wired in unconditionally and a long
-     * press on left works as the fallback until the user assigns something reachable.
+     * default that exists on every remote, so `DEL` is wired in unconditionally and holding
+     * left works as the fallback until the user assigns something reachable.
      */
     var deleteKeyCode: Int
         get() = store.getInt(KEY_DELETE_KEYCODE, KeyBindings.NO_KEY)
@@ -117,11 +115,11 @@ class Preferences(context: Context) {
 
     /**
      * What the post-update relaunch attempt managed, written by `PackageReplacedReceiver`.
-     * Read on the update screen, because after an update there is no log to look at - the
+     * Read on the update screen, because after an update there is no log to look at — the
      * process that would have written one was killed by the install.
      */
-    var lastRelaunch: String
-        get() = store.getString(KEY_LAST_RELAUNCH, "never seen") ?: "never seen"
+    var lastRelaunch: String?
+        get() = store.getString(KEY_LAST_RELAUNCH, null)
         set(value) = store.edit().putString(KEY_LAST_RELAUNCH, value).apply()
 
     fun keyCodeFor(binding: Binding): Int = when (binding) {
