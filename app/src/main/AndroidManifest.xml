@@ -53,6 +53,11 @@
             android:exported="false"
             android:label="@string/app_name" />
 
+        <activity
+            android:name=".settings.SupportActivity"
+            android:exported="false"
+            android:label="@string/support_title" />
+
         <!-- Separate process on purpose: the component that handles keystrokes contains
              no networking code, and this is where that claim is enforced rather than
              merely asserted. -->

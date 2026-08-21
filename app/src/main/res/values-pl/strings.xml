@@ -97,6 +97,14 @@
     <string name="update_privacy">Sprawdzane tylko po naciśnięciu. Jedno zapytanie o wersję, jedno o plik, nic nie jest wysyłane. To, co piszesz, nigdy nie opuszcza urządzenia.</string>
     <string name="update_back">BACK wraca do ustawień.</string>
 
+    <string name="settings_section_support">Wsparcie</string>
+    <string name="settings_support">Wesprzyj tę klawiaturę</string>
+    <string name="support_title">Wesprzyj tę klawiaturę</string>
+    <string name="support_free">LetterWise jest otwartoźródłowy, na licencji MIT. Jest darmowy, zostanie darmowy i nic w nim nie jest przytrzymane dla tych, którzy nie zapłacą.</string>
+    <string name="support_thanks">Jeśli oszczędza ci mordęgi z klawiaturą-siatką i masz ochotę coś wrzucić do kapelusza, będę szczerze wdzięczny. Każda kwota pomaga, a „nie" jest całkowicie dobrą odpowiedzią.</string>
+    <string name="support_scan">Zeskanuj telefonem</string>
+    <string name="support_back">BACK wraca do ustawień.</string>
+
     <string name="strip_no_model">%1$s bez modelu</string>
     <string name="strip_press_keys">naciśnij 2-9</string>
     <string name="strip_chooser_hint">góra / dół</string>
