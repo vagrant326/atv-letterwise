@@ -12,31 +12,19 @@ private fun composer(model: NgramModel = UniformModel) =
 class ComposerTest {
 
     @Test
-    fun `a group press puts the top candidate in flight without resolving it`() {
+    fun `a group press puts the top candidate in flight`() {
         val subject = composer()
-        subject.pressGroup('2')
+        subject.pressGroup('2', context = "")
 
-        assertEquals("", subject.committedText)
         assertEquals('a', subject.pending)
-        assertEquals("a", subject.text)
+        assertTrue(subject.hasPending)
         assertEquals(listOf('a', 'b', 'c'), subject.alternatives)
-    }
-
-    @Test
-    fun `the next group press resolves the previous character, so accept is optional`() {
-        val subject = composer()
-        subject.pressGroup('2')
-        subject.pressGroup('3')
-
-        assertEquals("a", subject.committedText)
-        assertEquals('d', subject.pending)
-        assertEquals("ad", subject.text)
     }
 
     @Test
     fun `walking candidates wraps in both directions`() {
         val subject = composer()
-        subject.pressGroup('2')
+        subject.pressGroup('2', context = "")
 
         subject.nextCandidate()
         assertEquals('b', subject.pending)
@@ -49,77 +37,67 @@ class ComposerTest {
     }
 
     @Test
-    fun `space resolves whatever is in flight and never disambiguates`() {
+    fun `nothing is in flight before a group press or after clearing`() {
         val subject = composer()
-        subject.pressGroup('2')
-        subject.nextCandidate()
-        subject.pressSymbol(' ')
 
-        assertEquals("b ", subject.committedText)
+        assertNull(subject.pending)
+        assertFalse(subject.hasPending)
+
+        subject.pressGroup('5', context = "")
+        assertTrue(subject.hasPending)
+
+        subject.clearPending()
+        assertFalse(subject.hasPending)
         assertNull(subject.pending)
     }
 
     @Test
-    fun `backspace drops the character in flight before touching resolved text`() {
-        val subject = composer()
-        subject.pressGroup('2')
-        subject.pressGroup('3')
-
-        assertTrue(subject.backspace())
-        assertEquals("a", subject.committedText)
-        assertNull(subject.pending)
-
-        assertTrue(subject.backspace())
-        assertEquals("", subject.committedText)
-    }
-
-    @Test
-    fun `backspace on an empty buffer reports nothing to delete`() {
-        val subject = composer()
-
-        assertTrue(subject.isEmpty)
-        assertFalse(subject.backspace())
-    }
-
-    @Test
-    fun `resolved characters feed the next prediction`() {
+    fun `context supplied by the caller drives the ranking`() {
         val model = BackoffNgramModel.train(3, sequenceOf("abababab"))
         val subject = composer(model)
 
-        subject.pressGroup('2')
+        // Group '2' holds a, b and c. With nothing before the caret, 'a' and 'b' tie and the
+        // group order decides. Having resolved 'a', the model must rank 'b' first.
+        subject.pressGroup('2', context = "")
         assertEquals('a', subject.pending)
-        // Having resolved 'a', the same group must now rank 'b' first.
-        subject.pressGroup('2')
-        assertEquals("a", subject.committedText)
+
+        subject.pressGroup('2', context = "a")
         assertEquals('b', subject.pending)
     }
 
     @Test
-    fun `switching model mid-word keeps the buffer and the chosen letter`() {
+    fun `a group press replaces whatever was in flight`() {
         val subject = composer()
-        subject.pressGroup('2')
-        subject.pressGroup('7')
+        subject.pressGroup('2', context = "")
+        subject.nextCandidate()
+        assertEquals('b', subject.pending)
+
+        subject.pressGroup('7', context = "b")
+        assertEquals(listOf('p', 'q', 'r', 's'), subject.alternatives)
+        assertEquals('p', subject.pending)
+    }
+
+    @Test
+    fun `switching model keeps the chosen letter`() {
+        val subject = composer()
+        subject.pressGroup('7', context = "")
         subject.nextCandidate()
         val chosen = subject.pending
 
         subject.useDisambiguator(
-            Disambiguator(Partition.ITU, BackoffNgramModel.train(3, sequenceOf("qrs qrs")))
+            Disambiguator(Partition.ITU, BackoffNgramModel.train(3, sequenceOf("qrs qrs"))),
+            context = "",
         )
 
-        assertEquals("a", subject.committedText)
         assertEquals(chosen, subject.pending)
     }
 
     @Test
-    fun `clear empties everything`() {
+    fun `switching model with nothing in flight is harmless`() {
         val subject = composer()
-        subject.pressGroup('2')
-        subject.pressSymbol(' ')
-        subject.pressGroup('9')
 
-        subject.clear()
+        subject.useDisambiguator(Disambiguator(Partition.ITU, UniformModel), context = "")
 
-        assertTrue(subject.isEmpty)
-        assertEquals("", subject.text)
+        assertFalse(subject.hasPending)
     }
 }

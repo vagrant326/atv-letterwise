@@ -1,45 +1,41 @@
 package io.github.vagrant326.atvletterwise.core
 
 /**
- * The editing state machine, kept out of the IME service so it can be tested without a
- * device. Holds resolved text plus at most one unresolved position.
+ * Disambiguation state for the one unresolved position, kept out of the IME service so it
+ * can be tested without a device.
  *
- * Accept is optional: pressing the next group key resolves the previous character, as on
- * a phone keypad. Requiring an explicit accept would cost a full point of KSPC.
+ * It deliberately owns **no text buffer**. Once the caret can move, the editor is the only
+ * thing that knows where the text is and what is around it; a buffer here would be a second
+ * copy that goes stale the moment anything else touches the field. The caller supplies the
+ * context preceding the caret with each press.
+ *
+ * Accept is optional: pressing the next group key resolves the previous character, as on a
+ * phone keypad. Requiring an explicit accept would cost a full point of KSPC.
  */
-class Composer(
-    private var disambiguator: Disambiguator,
-    private val deterministicKeys: Map<Char, Char> = Simulator.DEFAULT_DETERMINISTIC_KEYS,
-) {
+class Composer(private var disambiguator: Disambiguator) {
 
-    private val resolved = StringBuilder()
     private var candidates: List<Char> = emptyList()
     private var cursor = 0
     private var pendingKey: Char? = null
 
-    val committedText: String get() = resolved.toString()
-
     /** The unresolved character, or null when there is nothing in flight. */
     val pending: Char? get() = candidates.getOrNull(cursor)
+
+    val hasPending: Boolean get() = candidates.isNotEmpty()
 
     val alternatives: List<Char> get() = candidates
 
     val alternativeIndex: Int get() = cursor
 
-    val text: String get() = committedText + (pending?.toString() ?: "")
-
-    val isEmpty: Boolean get() = resolved.isEmpty() && candidates.isEmpty()
-
-    fun pressGroup(key: Char) {
-        resolvePending()
-        candidates = disambiguator.candidates(resolved.toString(), key)
+    /**
+     * @param context the resolved text immediately before the caret. Using resolved
+     *   characters rather than the raw key sequence is what makes an early NEXT correction
+     *   improve every prediction after it.
+     */
+    fun pressGroup(key: Char, context: String) {
+        candidates = disambiguator.candidates(context, key)
         cursor = 0
         pendingKey = if (candidates.isEmpty()) null else key
-    }
-
-    fun pressSymbol(symbol: Char) {
-        resolvePending()
-        resolved.append(symbol)
     }
 
     fun nextCandidate() {
@@ -54,55 +50,22 @@ class Composer(
         }
     }
 
-    fun accept() {
-        resolvePending()
-    }
-
-    /**
-     * Deletes the unresolved character if there is one, otherwise the last resolved
-     * character. Returns false when there was nothing left to delete, which is the
-     * signal for the caller to dismiss instead.
-     */
-    fun backspace(): Boolean {
-        if (candidates.isNotEmpty()) {
-            candidates = emptyList()
-            cursor = 0
-            pendingKey = null
-            return true
-        }
-        if (resolved.isNotEmpty()) {
-            resolved.deleteCharAt(resolved.length - 1)
-            return true
-        }
-        return false
-    }
-
-    fun clear() {
-        resolved.setLength(0)
+    fun clearPending() {
         candidates = emptyList()
         cursor = 0
         pendingKey = null
     }
 
     /**
-     * Swaps the language model. Keeps the buffer and re-ranks anything in flight, holding
-     * on to the letter the user had selected: switching language mid-word states intent
-     * about what comes next, it is not a request to start over.
+     * Swaps the language model, re-ranking anything in flight while holding on to the letter
+     * the user had selected: switching language mid-word states intent about what comes
+     * next, it is not a request to start over.
      */
-    fun useDisambiguator(replacement: Disambiguator) {
+    fun useDisambiguator(replacement: Disambiguator, context: String) {
         disambiguator = replacement
         val key = pendingKey ?: return
         val selected = pending
-        candidates = disambiguator.candidates(resolved.toString(), key)
+        candidates = disambiguator.candidates(context, key)
         cursor = candidates.indexOf(selected).coerceAtLeast(0)
-    }
-
-    fun isDeterministic(symbol: Char): Boolean = deterministicKeys.containsKey(symbol)
-
-    private fun resolvePending() {
-        pending?.let { resolved.append(it) }
-        candidates = emptyList()
-        cursor = 0
-        pendingKey = null
     }
 }

@@ -128,6 +128,9 @@ class UpdateActivity : Activity() {
     }
 
     private fun fetch(target: File) {
+        // A stale file from the previous attempt is the difference between the first update
+        // and the second, so start from nothing rather than writing over it.
+        target.delete()
         val connection = URL(DOWNLOAD_URL).openConnection() as HttpsURLConnection
         try {
             connection.connectTimeout = TIMEOUT_MS
@@ -155,6 +158,16 @@ class UpdateActivity : Activity() {
         } finally {
             connection.disconnect()
         }
+
+        // An APK is a zip. Checking the magic bytes turns "the installer did nothing" into a
+        // message here, where the cause is still visible.
+        val header = target.inputStream().use { input -> ByteArray(2).also { input.read(it) } }
+        require(target.length() > MINIMUM_APK_BYTES) {
+            "downloaded ${target.length()} bytes, too small to be an APK"
+        }
+        require(header[0] == 'P'.code.toByte() && header[1] == 'K'.code.toByte()) {
+            "downloaded file is not a zip, so not an APK"
+        }
     }
 
     private fun install(apk: File) {
@@ -177,16 +190,35 @@ class UpdateActivity : Activity() {
             return
         }
 
-        val uri = FileProvider.getUriForFile(this, "$packageName.updates", apk)
-        startActivity(
-            Intent(Intent.ACTION_VIEW).apply {
-                setDataAndType(uri, "application/vnd.android.package-archive")
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
+        // Claiming success without checking is what made the second update impossible to
+        // diagnose: the screen said the installer had been handed the file while nothing had
+        // opened. Report what actually happened.
+        val outcome = runCatching {
+            val uri = FileProvider.getUriForFile(this, "$packageName.updates", apk)
+            startActivity(
+                Intent(Intent.ACTION_VIEW).apply {
+                    setDataAndType(uri, "application/vnd.android.package-archive")
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+            )
+        }
+        outcome.fold(
+            onSuccess = {
+                status.text = "Installer opened for ${apk.length() / 1024} kB.\n" +
+                    "If nothing appeared, press install again."
+                action.text = "Install again"
+                action.isClickable = true
+                action.setOnClickListener { install(apk) }
+            },
+            onFailure = { failure ->
+                status.text = "Could not open the installer: ${failure.javaClass.simpleName}\n" +
+                    (failure.message ?: "")
+                action.text = "Retry"
+                action.isClickable = true
+                action.setOnClickListener { download() }
+            },
         )
-        status.text = "Handed to the system installer."
-        action.visibility = TextView.GONE
     }
 
     private fun check(): Check {
@@ -261,6 +293,7 @@ class UpdateActivity : Activity() {
         const val DOWNLOAD_URL =
             "https://github.com/vagrant326/atv-letterwise/releases/download/latest/atv-letterwise.apk"
         const val TIMEOUT_MS = 20_000
+        const val MINIMUM_APK_BYTES = 100_000L
         val TAG_NAME = """"tag_name"\s*:\s*"([^"]+)"""".toRegex()
 
         const val BACKGROUND = 0xFF08080B.toInt()

@@ -1,7 +1,7 @@
 package io.github.vagrant326.atvletterwise.settings
 
 import android.content.Context
-import android.view.KeyEvent
+import io.github.vagrant326.atvletterwise.ime.CustomKeys
 import io.github.vagrant326.atvletterwise.ime.KeyBindings
 import io.github.vagrant326.atvletterwise.model.Language
 
@@ -22,6 +22,20 @@ enum class HintMode(val label: String, val description: String) {
     ;
 
     fun next(): HintMode = entries[(ordinal + 1) % entries.size]
+}
+
+/** A function the user can put on a button of their choosing. */
+enum class Binding(val title: String, val prompt: String, val fallback: String) {
+    LANGUAGE(
+        "Language button",
+        "Press the button you want for switching language",
+        "Long press on 1 opens the language list either way.",
+    ),
+    DELETE(
+        "Delete button",
+        "Press the button you want for deleting",
+        "Long press on left deletes either way.",
+    ),
 }
 
 class Preferences(context: Context) {
@@ -87,11 +101,30 @@ class Preferences(context: Context) {
      * guess and the capture screen is the answer.
      */
     var languageKeyCode: Int
-        get() = store.getInt(KEY_LANGUAGE_KEYCODE, KeyEvent.KEYCODE_STAR)
+        get() = store.getInt(KEY_LANGUAGE_KEYCODE, KeyBindings.NO_KEY)
         set(value) = store.edit().putInt(KEY_LANGUAGE_KEYCODE, value).apply()
 
-    fun clearLanguageKey() {
-        store.edit().putInt(KEY_LANGUAGE_KEYCODE, KeyBindings.NO_KEY).apply()
+    /**
+     * Delete needs a key of its own now that left and right move the caret. There is no
+     * default that exists on every remote, so `DEL` is wired in unconditionally and a long
+     * press on left works as the fallback until the user assigns something reachable.
+     */
+    var deleteKeyCode: Int
+        get() = store.getInt(KEY_DELETE_KEYCODE, KeyBindings.NO_KEY)
+        set(value) = store.edit().putInt(KEY_DELETE_KEYCODE, value).apply()
+
+    val customKeys: CustomKeys get() = CustomKeys(languageKeyCode, deleteKeyCode)
+
+    fun keyCodeFor(binding: Binding): Int = when (binding) {
+        Binding.LANGUAGE -> languageKeyCode
+        Binding.DELETE -> deleteKeyCode
+    }
+
+    fun assign(binding: Binding, keyCode: Int) {
+        when (binding) {
+            Binding.LANGUAGE -> languageKeyCode = keyCode
+            Binding.DELETE -> deleteKeyCode = keyCode
+        }
     }
 
     /** Survives restarts: the language is a mode, and a mode that silently resets is a trap. */
@@ -108,5 +141,6 @@ class Preferences(context: Context) {
         const val KEY_ENABLED_LANGUAGES = "enabled_languages"
         const val KEY_ACTIVE_LANGUAGE = "active_language"
         const val KEY_LANGUAGE_KEYCODE = "language_keycode"
+        const val KEY_DELETE_KEYCODE = "delete_keycode"
     }
 }

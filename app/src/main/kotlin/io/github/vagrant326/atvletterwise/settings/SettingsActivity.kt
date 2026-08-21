@@ -19,6 +19,7 @@ import android.widget.ScrollView
 import android.widget.TextView
 import io.github.vagrant326.atvletterwise.BuildConfig
 import android.view.KeyEvent
+import io.github.vagrant326.atvletterwise.ime.KeyBindings
 import io.github.vagrant326.atvletterwise.model.Language
 import io.github.vagrant326.atvletterwise.update.UpdateActivity
 
@@ -52,16 +53,15 @@ class SettingsActivity : Activity() {
         content.addView(hintModeRow())
         content.addView(sectionLabel("Languages"))
         content.addView(languageRows())
-        content.addView(
-            navigationRow("Pick the language button on your remote") {
-                startActivity(Intent(this, KeyCaptureActivity::class.java))
-            }
-        )
+        content.addView(sectionLabel("Buttons"))
+        for (binding in Binding.entries) {
+            content.addView(captureRow(binding))
+        }
         content.addView(
             caption(
-                "Remotes disagree about what sits where a phone has *, and about what it " +
-                    "reports. Press the button you want and it gets recorded. Long press on " +
-                    "1 opens the language list either way."
+                "Remotes disagree about which buttons exist and about what they report - the " +
+                    "key printed TEXT here sends keycode 300. Press the button you want and " +
+                    "it gets recorded. Both functions stay reachable without this."
             )
         )
         content.addView(sectionLabel("System"))
@@ -210,6 +210,17 @@ class SettingsActivity : Activity() {
     }
 
     private fun checkbox(checked: Boolean) = if (checked) "☑" else "☐"
+
+    private fun captureRow(binding: Binding): View {
+        val code = preferences.keyCodeFor(binding)
+        val value = if (code == KeyBindings.NO_KEY) "not set" else KeyEvent.keyCodeToString(code)
+        return navigationRow("${binding.title}: $value") {
+            startActivity(
+                Intent(this, KeyCaptureActivity::class.java)
+                    .putExtra(KeyCaptureActivity.EXTRA_BINDING, binding.name)
+            )
+        }
+    }
 
     /**
      * Visually distinct from the setting rows above, because it does something categorically
