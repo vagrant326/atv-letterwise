@@ -93,15 +93,20 @@ run the Release workflow manually from the Actions tab and choose the level.
 
 ## Installing
 
-One address, permanently the newest build — bookmark it in the downloader app on the TV
-and never change it:
+Bookmark either of these in the downloader app on the TV. Both are permanent and both
+always serve the newest build:
 
 ```
+https://github.com/vagrant326/atv-letterwise/releases/download/latest/atv-letterwise.apk
 https://github.com/vagrant326/atv-letterwise/releases/latest/download/atv-letterwise.apk
 ```
 
-The asset name deliberately carries no version number, which is what keeps that URL
-stable. The version lives in the release tag and in the app's own settings screen.
+The first is a rolling `latest` release that each build recreates. The second is resolved
+by GitHub itself from the newest versioned release — no extra machinery, but the path shape
+is easy to confuse with the first.
+
+Either way the asset name deliberately carries no version number, which is what keeps the
+URL stable. The version lives in the release tag and in the app's own settings screen.
 [All releases](https://github.com/vagrant326/atv-letterwise/releases) are listed if you
 need a specific older one.
 

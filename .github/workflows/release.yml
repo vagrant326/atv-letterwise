@@ -192,6 +192,26 @@ jobs:
             --title "${{ steps.v.outputs.tag }}" \
             --generate-notes
 
+      # Serves https://github.com/OWNER/REPO/releases/download/latest/atv-letterwise.apk
+      # as a second stable address, alongside the releases/latest/download/... one that
+      # GitHub resolves on its own. A tag cannot be repointed in place, so the release and
+      # its tag are deleted and recreated each time.
+      #
+      # --latest=false matters: without it this release would take over as the repository's
+      # "latest", and the version-resolution step reads tags rather than that flag, so the
+      # two addresses would start disagreeing about which build is newest.
+      - name: Refresh the 'latest' alias release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          gh release delete latest --yes --cleanup-tag 2>/dev/null || true
+          gh release create latest "$APK" \
+            --target "${{ github.sha }}" \
+            --title "latest" \
+            --latest=false \
+            --notes "Rolling alias, always the newest build. Currently ${{ steps.v.outputs.tag }}."
+
       - name: Clean up keystore
         if: always()
         run: rm -f "$RUNNER_TEMP/release.jks"
