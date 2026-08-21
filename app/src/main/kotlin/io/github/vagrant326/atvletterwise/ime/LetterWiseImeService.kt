@@ -148,7 +148,7 @@ class LetterWiseImeService : InputMethodService() {
             partition = partition,
             language = language,
             trained = models.isTrained(language),
-            showLegend = preferences.showLegend,
+            hintMode = preferences.hintMode,
         )
     }
 
