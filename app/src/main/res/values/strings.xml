@@ -12,6 +12,7 @@
     <string name="update_working" translatable="false">…</string>
     <string name="update_percent" translatable="false">%1$d%%</string>
     <string name="update_installing_headline" translatable="false">%1$d kB</string>
+    <string name="settings_source_url" translatable="false">github.com/vagrant326/atv-letterwise</string>
 
     <string name="update_name">LetterWise updates</string>
 
@@ -24,12 +25,13 @@
 
     <string name="binding_language">Language button</string>
     <string name="binding_language_prompt">Press the button you want for switching language</string>
-    <string name="binding_language_fallback">Holding 1 opens the language list either way.</string>
+    <string name="binding_language_fallback">Without a button here, the language only changes by ticking a different one above.</string>
     <string name="binding_delete">Delete button</string>
     <string name="binding_delete_prompt">Press the button you want for deleting</string>
     <string name="binding_delete_fallback">Holding left deletes either way.</string>
 
     <string name="settings_version">Version %1$s</string>
+    <string name="settings_source">Source at %1$s</string>
     <string name="settings_section_keyboard">Keyboard</string>
     <string name="settings_section_languages">Languages</string>
     <string name="settings_section_buttons">Buttons</string>
@@ -40,14 +42,14 @@
     <string name="settings_key_hint">Key hint</string>
     <string name="settings_language_note">The language button cycles through the ones you tick, in this order.</string>
     <string name="settings_language_minimum">At least one language has to stay on.</string>
-    <string name="settings_buttons_note">Remotes disagree about which buttons exist and about what they report. Press the button you want and it gets recorded. Both functions stay reachable without this.</string>
+    <string name="settings_buttons_note">Remotes disagree about which buttons exist and about what they report. Press the button you want and it gets recorded. Deleting and digits work without any of this; switching language needs a button of its own.</string>
     <string name="settings_binding_row">%1$s: %2$s</string>
     <string name="settings_binding_unset">not set</string>
     <string name="settings_system_keyboard">Android keyboard settings</string>
     <string name="settings_system_keyboard_note">Leaves this app. Enable or switch the active keyboard there.</string>
     <string name="settings_check_updates">Check for updates</string>
     <string name="settings_updates_note">The only thing here that uses the network. It runs in a separate process, only when you press it, and sends nothing. What you type never leaves the device.</string>
-    <string name="settings_typing_note">2-9 pick a letter group. 0 is space. 1 is punctuation, and holding it opens the language list. Up and down walk the alternatives, and so do channel up and down. Left and right move the caret. Holding left deletes. Centre submits, back closes.\n\nAccept is optional: pressing the next group key accepts the previous letter on its own.</string>
+    <string name="settings_typing_note">2-9 pick a letter group. 0 is space. 1 is punctuation, and pressing it again cycles the marks. Up and down walk the alternatives, and so do channel up and down. Left and right move the caret. Holding left deletes. Centre submits, back closes.\n\nAccept is optional: pressing the next group key accepts the previous letter on its own.\n\nHolding any of 0-9 types the digit printed on it, which is enough for a digit inside a word. A field that asks for numbers opens in digit mode instead, and the button above switches that mode by hand for a longer run.</string>
     <string name="settings_scratch_hint">Type here</string>
     <string name="settings_scratch_note">Focus this field to bring the keyboard up. Nothing here is saved.</string>
 
@@ -110,12 +112,23 @@
     <string name="update_privacy">Checked only when you press it. One request for the version, one for the file, nothing sent. What you type never leaves the device.</string>
     <string name="update_back">BACK returns to settings.</string>
 
+    <string name="binding_trigger">Trigger key</string>
+    <string name="binding_trigger_prompt">Press the button you want for raising the keyboard anywhere</string>
+    <string name="binding_trigger_fallback">Unassigned by default, and the only key the keyboard listens for while hidden. Nothing else raises it in an app that never asks for text.</string>
+
+    <string name="binding_digits">Digits button</string>
+    <string name="binding_digits_prompt">Press the button you want for switching between letters and digits</string>
+    <string name="binding_digits_fallback">Optional. Holding a number key already types the digit printed on it; a button here is only worth it for typing a run of them.</string>
+    <string name="strip_no_editor">nowhere to type — this app never asked for input</string>
+
     <string name="settings_section_support">Support</string>
     <string name="settings_support">Support this keyboard</string>
     <string name="support_title">Support this keyboard</string>
-    <string name="support_free">LetterWise is open source and MIT licensed. It is free, it will stay free, and nothing in it is held back for people who do not pay.</string>
-    <string name="support_thanks">If it saves you the grind of a grid keyboard and you feel like putting something in the jar, I would be genuinely grateful. Anything at all helps, and no is a perfectly good answer.</string>
+    <string name="support_free">LetterWise is open source and MIT licensed. It is free, it stays free, and nothing in it is locked away for people who do not pay.</string>
+    <string name="support_thanks">If it has saved you a few thousand trips around an on-screen grid, you can buy me a coffee.</string>
     <string name="support_scan">Scan with your phone</string>
+    <string name="support_url" translatable="false">ko-fi.com/vagrant326</string>
+    <string name="support_or">or open it yourself</string>
     <string name="support_back">BACK returns to settings.</string>
 
     <string name="strip_no_model">%1$s no model</string>
@@ -127,7 +140,11 @@
     <string name="strip_hint_submit">submit</string>
     <string name="strip_caret_keys">left / right</string>
     <string name="strip_submit_key">centre</string>
-    <string name="strip_fallback_language">hold 1</string>
+    <string name="strip_fallback_language">not set</string>
     <string name="strip_fallback_delete">hold left</string>
     <string name="strip_space">space</string>
+    <string name="strip_digits">digits</string>
+    <string name="strip_digits_exit">digits — %1$s for letters</string>
+    <string name="strip_hint_digits">digits</string>
+    <string name="strip_fallback_digits">hold 0-9</string>
 </resources>

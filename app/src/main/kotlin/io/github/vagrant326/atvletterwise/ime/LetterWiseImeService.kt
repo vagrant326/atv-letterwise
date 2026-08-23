@@ -1,6 +1,8 @@
 package io.github.vagrant326.atvletterwise.ime
 
 import android.inputmethodservice.InputMethodService
+import android.os.Build
+import android.text.InputType
 import android.view.KeyEvent
 import android.view.View
 import android.view.inputmethod.EditorInfo
@@ -25,6 +27,15 @@ class LetterWiseImeService : InputMethodService() {
     private var showLanguageChooser = false
     private var composing = false
 
+    /** The numeric row types digits rather than letter groups. Per field, never remembered. */
+    private var digits = false
+
+    /**
+     * A key that is down and whose character is still waiting for the release, or
+     * `KEYCODE_UNKNOWN` for none. Cleared the moment a hold claims the press, and per field.
+     */
+    private var deferredKey = KeyEvent.KEYCODE_UNKNOWN
+
     override fun onCreate() {
         super.onCreate()
         models = ModelRepository(this)
@@ -41,12 +52,30 @@ class LetterWiseImeService : InputMethodService() {
         composer.clearPending()
         punctuationIndex = -1
         showLanguageChooser = false
+        digits = wantsDigits(info)
+        deferredKey = KeyEvent.KEYCODE_UNKNOWN
         if (language !in preferences.enabledLanguages) {
             language = preferences.activeLanguage
             composer.useDisambiguator(disambiguatorFor(language), context())
         }
         moveCaretToEnd(info)
         render()
+    }
+
+    /**
+     * A field that declares itself numeric has no use for letter prediction, so it starts in
+     * digit mode. Recomputed for every field rather than remembered: a manual switch made in a
+     * PIN box must not follow the user into the next search query.
+     *
+     * Plenty of fields that mostly hold digits still declare themselves plain text — the
+     * pairing-code box this was found in is one — which is why the manual toggle exists and
+     * this is only the shortcut for fields that are honest.
+     */
+    private fun wantsDigits(info: EditorInfo?): Boolean {
+        val variant = (info?.inputType ?: return false) and InputType.TYPE_MASK_CLASS
+        return variant == InputType.TYPE_CLASS_NUMBER ||
+            variant == InputType.TYPE_CLASS_PHONE ||
+            variant == InputType.TYPE_CLASS_DATETIME
     }
 
     /**
@@ -70,15 +99,23 @@ class LetterWiseImeService : InputMethodService() {
     override fun onEvaluateFullscreenMode(): Boolean = false
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
-        // An IME receives hardware key events even while its window is hidden. Consuming
-        // d-pad events in that state takes over navigation for the whole device - it left a
-        // TV unnavigable, recoverable only via HOME or a USB mouse. Never consume anything
-        // unless the keyboard is actually on screen with somewhere to type.
-        if (!isInputViewShown || currentInputConnection == null) {
+        // An IME receives hardware key events even while its window is hidden. Consuming d-pad
+        // events in that state takes over navigation for the whole device - it left a TV
+        // unnavigable, recoverable only via HOME or a USB mouse.
+        //
+        // So while hidden exactly one key is honoured: the trigger the user assigned, which is
+        // unassigned by default and can never be a reserved key. One key, chosen deliberately,
+        // is a blast radius worth having; the d-pad is not.
+        if (!isInputViewShown) {
+            val trigger = preferences.triggerKeyCode
+            if (trigger != KeyBindings.NO_KEY && keyCode == trigger && event.repeatCount == 0) {
+                raiseSelf()
+                return true
+            }
             return super.onKeyDown(keyCode, event)
         }
 
-        val action = KeyBindings.of(keyCode, event.repeatCount, preferences.customKeys)
+        val action = KeyBindings.of(keyCode, event.repeatCount, preferences.customKeys, digits)
             ?: return super.onKeyDown(keyCode, event)
 
         if (action == Action.Ignore) {
@@ -90,7 +127,10 @@ class LetterWiseImeService : InputMethodService() {
             return true
         }
 
-        if (action !is Action.Punctuation) {
+        // Only another short `1` continues the punctuation cycle. Anything else breaks it —
+        // including holding `1` for the digit — so the next press starts fresh instead of
+        // deleting a character it did not put there.
+        if (action != Action.DeferToRelease || keyCode != KeyEvent.KEYCODE_1) {
             punctuationIndex = -1
         }
         showLanguageChooser = false
@@ -106,9 +146,28 @@ class LetterWiseImeService : InputMethodService() {
                 currentInputConnection?.commitText(action.symbol.toString(), 1)
             }
 
+            // The hold has claimed the press, so the release must not also fire.
+            is Action.Digit -> {
+                deferredKey = KeyEvent.KEYCODE_UNKNOWN
+                if (action.discardsPending) {
+                    composer.clearPending()
+                } else {
+                    resolvePending()
+                }
+                currentInputConnection?.commitText(action.digit.toString(), 1)
+            }
+
             Action.NextCandidate -> composer.nextCandidate()
             Action.PreviousCandidate -> composer.previousCandidate()
-            Action.Punctuation -> cyclePunctuation()
+
+            // Nothing happens yet. See onKeyUp.
+            Action.DeferToRelease -> deferredKey = keyCode
+
+            Action.ToggleDigits -> {
+                resolvePending()
+                digits = !digits
+            }
+
             Action.NextLanguage -> stepLanguage(1)
             Action.ShowLanguages -> showLanguageChooser = true
             Action.Ignore -> Unit
@@ -156,6 +215,52 @@ class LetterWiseImeService : InputMethodService() {
 
         render()
         return true
+    }
+
+    /**
+     * `0` and `1` commit on release rather than on press, because each carries a character *and*
+     * a digit, and a hold arrives as a *second* key-down.
+     *
+     * Committing on the way down and retracting on the hold was the obvious version and does not
+     * work: `commitText` is one-way, so the `getTextBeforeCursor` that would confirm what to
+     * retract is answered from before the commit has landed. The retraction then either misses
+     * the character or, unguarded, deletes whatever the user typed before it. Deciding on the way
+     * up needs neither guess — nothing was committed, so nothing has to be un-typed.
+     *
+     * `2`-`9` are not deferred. Their short press only sets composing text, which the digit can
+     * drop for free, and deferring them would hold back the letter that makes the keyboard feel
+     * like it is keeping up.
+     */
+    override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean {
+        if (keyCode != deferredKey) {
+            return super.onKeyUp(keyCode, event)
+        }
+        deferredKey = KeyEvent.KEYCODE_UNKNOWN
+        if (keyCode == KeyEvent.KEYCODE_1) {
+            cyclePunctuation()
+        } else {
+            resolvePending()
+            currentInputConnection?.commitText(" ", 1)
+        }
+        render()
+        return true
+    }
+
+    /**
+     * Raises the keyboard without an app having asked for it, which is the whole of what the
+     * trigger key does.
+     *
+     * `requestShowSelf` puts the window on screen, but an IME writes through an
+     * `InputConnection` and a view that never requested input does not provide one - so over an
+     * app that renders its own keyboard, the keys arrive and there is nowhere to send them. The
+     * strip says which of the two happened rather than leaving it to guesswork; see
+     * docs/30-global-key-capture.md for why the accessibility route is the only one with both
+     * halves.
+     */
+    private fun raiseSelf() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            requestShowSelf(0)
+        }
     }
 
     /**
@@ -258,6 +363,8 @@ class LetterWiseImeService : InputMethodService() {
                 hintMode = preferences.hintMode,
                 showLanguageChooser = showLanguageChooser,
                 customKeys = preferences.customKeys,
+                hasEditor = connection != null,
+                digits = digits,
             )
         )
     }

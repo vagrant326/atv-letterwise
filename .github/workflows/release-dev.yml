@@ -1,10 +1,11 @@
-name: Release
+name: Release dev
 
-# A push to main is a production release. There is no separate tagging step, and nothing lands
-# on main that is not meant to ship - which in practice means a pull request from develop.
+# Every push to develop publishes a dev build. It installs as its own application, alongside
+# whatever is on the TV from main, so an experiment that misbehaves does not take the working
+# keyboard with it.
 on:
   push:
-    branches: [main]
+    branches: [develop]
   workflow_dispatch:
     inputs:
       bump:
@@ -18,7 +19,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: release-prod
+  group: release-dev
   cancel-in-progress: false
 
 jobs:
@@ -26,9 +27,9 @@ jobs:
     uses: ./.github/workflows/release-common.yml
     secrets: inherit
     with:
-      channel: prod
-      tag-prefix: v
-      flavour: Prod
-      asset: atv-letterwise.apk
-      alias: latest
+      channel: dev
+      tag-prefix: dev-
+      flavour: Dev
+      asset: atv-letterwise-dev.apk
+      alias: latest-dev
       bump: ${{ github.event.inputs.bump || 'patch' }}

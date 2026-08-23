@@ -421,6 +421,14 @@ class UpdateActivity : Activity() {
 
     private fun installAction() = "$packageName.INSTALL_RESULT"
 
+    /**
+     * Lists releases and picks the newest tag belonging to **this** channel.
+     *
+     * `releases/latest` cannot be used: the two channels share a repository, and the dev
+     * releases are published with `--latest=false` precisely so they do not steal that
+     * endpoint from the production one. Filtering by tag prefix is what keeps a dev build from
+     * offering to install a production APK over itself, and vice versa.
+     */
     private fun fetchLatest(): Check {
         val connection = try {
             URL(API_URL).openConnection() as HttpsURLConnection
@@ -447,9 +455,18 @@ class UpdateActivity : Activity() {
                 code !in 200..299 -> Check.Failed("HTTP $code")
                 else -> {
                     val body = connection.inputStream.bufferedReader().use { it.readText() }
-                    val tag = TAG_NAME.find(body)?.groupValues?.get(1)
-                        ?: return Check.Failed("no tag_name in response")
-                    if (isNewer(tag, BuildConfig.VERSION_NAME)) Check.Newer(tag) else Check.UpToDate
+                    val newest = TAG_NAME.findAll(body)
+                        .map { it.groupValues[1] }
+                        .filter { it.startsWith(BuildConfig.RELEASE_TAG_PREFIX) }
+                        // The rolling alias tags carry no version and must not be compared.
+                        .filter { version(it).isNotEmpty() }
+                        .maxWithOrNull { left, right -> compare(version(left), version(right)) }
+                        ?: return Check.NoReleases
+                    if (isNewer(newest, BuildConfig.VERSION_NAME)) {
+                        Check.Newer(newest)
+                    } else {
+                        Check.UpToDate
+                    }
                 }
             }
         } catch (failure: Exception) {
@@ -459,25 +476,28 @@ class UpdateActivity : Activity() {
         }
     }
 
-    /**
-     * Compares numerically rather than by string equality, so a debug build reporting
-     * `0.0.0-dev` sees any release as newer and `0.0.10` is not treated as older than `0.0.9`.
-     */
-    private fun isNewer(latest: String, installed: String): Boolean {
-        fun parts(version: String) =
-            version.trim().removePrefix("v").split('.', '-').mapNotNull { it.toIntOrNull() }
+    private fun version(text: String): List<Int> =
+        text.removePrefix(BuildConfig.RELEASE_TAG_PREFIX)
+            .split('.', '-')
+            .mapNotNull { it.toIntOrNull() }
 
-        val newer = parts(latest)
-        val current = parts(installed)
-        for (index in 0 until maxOf(newer.size, current.size)) {
-            val a = newer.getOrElse(index) { 0 }
-            val b = current.getOrElse(index) { 0 }
+    private fun compare(left: List<Int>, right: List<Int>): Int {
+        for (index in 0 until maxOf(left.size, right.size)) {
+            val a = left.getOrElse(index) { 0 }
+            val b = right.getOrElse(index) { 0 }
             if (a != b) {
-                return a > b
+                return a.compareTo(b)
             }
         }
-        return false
+        return 0
     }
+
+    /**
+     * Component-wise and numeric, so `0.0.10` is not read as older than `0.0.9` and a debug
+     * build reporting `0.0.0-dev` sees any release as newer.
+     */
+    private fun isNewer(tag: String, installed: String): Boolean =
+        compare(version(tag), version(installed)) > 0
 
     private fun label(text: String, colour: Int, sizeSp: Float) = TextView(this).apply {
         this.text = text
@@ -514,10 +534,10 @@ class UpdateActivity : Activity() {
     private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
 
     private companion object {
-        const val API_URL =
-            "https://api.github.com/repos/vagrant326/atv-letterwise/releases/latest"
-        const val DOWNLOAD_URL =
-            "https://github.com/vagrant326/atv-letterwise/releases/download/latest/atv-letterwise.apk"
+        const val REPO = "vagrant326/atv-letterwise"
+        const val API_URL = "https://api.github.com/repos/$REPO/releases?per_page=40"
+        val DOWNLOAD_URL = "https://github.com/$REPO/releases/download/" +
+            "${BuildConfig.RELEASE_ALIAS}/${BuildConfig.RELEASE_ASSET}"
         const val TIMEOUT_MS = 20_000
         const val MINIMUM_APK_BYTES = 100_000L
         const val APK_ENTRY = "atv-letterwise.apk"

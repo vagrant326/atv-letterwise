@@ -16,6 +16,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import io.github.vagrant326.atvletterwise.R
 import io.github.vagrant326.atvletterwise.core.Partition
+import io.github.vagrant326.atvletterwise.model.Language
 import io.github.vagrant326.atvletterwise.settings.HintMode
 
 /**
@@ -52,8 +53,16 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
 
     private val keypadCells = mutableMapOf<Char, TextView>()
 
+    /**
+     * Which language's letters the grid currently spells out, so a change can be noticed. Polish
+     * carries nine more letters on the same eight keys, so the grid is wrong rather than merely
+     * stale after a switch.
+     */
+    private var keypadLanguage: Language? = null
+
     private val languageValue = hintValue()
     private val deleteValue = hintValue()
+    private val digitsValue = hintValue()
 
     /**
      * The assigned keys, named rather than drawn into the grid, and set beside it.
@@ -84,6 +93,10 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
                 hintValue().apply { text = context.getString(R.string.strip_submit_key) },
             )
         )
+        // Nothing on the remote or in the grid says the number keys have a second meaning, and
+        // the grid cannot say it: the cells are three characters wide and already carry the
+        // digit and its letters.
+        addView(hintLine(context.getString(R.string.strip_hint_digits), digitsValue))
     }
 
     /**
@@ -110,14 +123,18 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
     fun update(state: StripState) {
         candidateRow.text = candidateRow(state)
 
-        if (keypad.childCount == 0) {
+        if (keypadLanguage != state.language) {
+            keypad.removeAllViews()
+            keypadCells.clear()
             buildKeypad(state.partition)
+            keypadLanguage = state.language
         }
-        val keypadVisible = state.hintMode == HintMode.KEYPAD
+        val keypadVisible = state.hintMode == HintMode.KEYPAD && !state.digits
         hintRow.visibility = if (keypadVisible) VISIBLE else GONE
-        inlineHint.visibility = if (state.hintMode == HintMode.INLINE) VISIBLE else GONE
+        inlineHint.visibility =
+            if (state.hintMode == HintMode.INLINE && !state.digits) VISIBLE else GONE
 
-        if (state.hintMode == HintMode.INLINE) {
+        if (inlineHint.visibility == VISIBLE) {
             val space = context.getString(R.string.strip_space)
             inlineHint.text = state.partition.groups.entries
                 .sortedBy { it.key }
@@ -131,6 +148,10 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
             deleteValue.text = keyLabel(
                 state.customKeys.delete,
                 context.getString(R.string.strip_fallback_delete),
+            )
+            digitsValue.text = keyLabel(
+                state.customKeys.digits,
+                context.getString(R.string.strip_fallback_digits),
             )
         }
 
@@ -190,6 +211,44 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
             val hint = text.length
             text.append(context.getString(R.string.strip_chooser_hint))
             text.setSpan(ForegroundColorSpan(DIM), hint, text.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            return text
+        }
+
+        // Says so rather than looking broken: raised by the trigger key over an app that never
+        // asked for input, there is nowhere to send characters.
+        if (!state.hasEditor) {
+            val text = SpannableStringBuilder(context.getString(R.string.strip_no_editor))
+            text.setSpan(
+                ForegroundColorSpan(WARNING),
+                0,
+                text.length,
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
+            )
+            return text
+        }
+
+        // Digits are deterministic, so there are no alternatives to walk and the row is free to
+        // carry the one thing the user cannot see otherwise: which mode they are in, and the
+        // way back out of it.
+        if (state.digits) {
+            // Named the way out only when there is one. A numeric field switches the mode on its
+            // own, and promising a button the user never assigned would be worse than silence.
+            val key = state.customKeys.digits
+            val label = if (key == KeyBindings.NO_KEY) {
+                context.getString(R.string.strip_digits)
+            } else {
+                context.getString(
+                    R.string.strip_digits_exit,
+                    KeyEvent.keyCodeToString(key).removePrefix("KEYCODE_"),
+                )
+            }
+            val text = SpannableStringBuilder(label)
+            text.setSpan(
+                ForegroundColorSpan(ACCENT),
+                0,
+                text.length,
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
+            )
             return text
         }
 
@@ -273,6 +332,7 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
         const val DIM = 0xFF80808C.toInt()
         const val MUTED = 0xFF6B6B78.toInt()
         const val ACCENT = 0xFF7FD1FF.toInt()
+        const val WARNING = 0xFFEF9F27.toInt()
         const val CELL = 0xFF1A1A22.toInt()
     }
 }

@@ -1,8 +1,10 @@
 name: CI
 
+# Feature branches and pull requests. develop and main both publish now, so they are covered
+# by their own release workflows rather than duplicated here.
 on:
   push:
-    branches: [develop, 'feature/**', 'fix/**']
+    branches: ['feature/**', 'fix/**']
   pull_request:
   workflow_dispatch:
 
@@ -26,26 +28,28 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v6
 
-      # The core module is Android-free on purpose, so the simulator and the shipped
-      # IME cannot diverge. With no device channel and no emulator, these tests plus
-      # lint are the entire safety net.
+      # The core module is Android-free on purpose, so the simulator and the shipped IME
+      # cannot diverge. With no device channel and no emulator, these tests plus lint are the
+      # entire safety net.
       - name: Check
         run: ./gradlew --no-daemon check
 
       - name: Lint
         run: ./gradlew --no-daemon lint
 
+      # Both flavours, because a flavour-specific resource or manifest mistake only shows up in
+      # the flavour that has it.
       - name: Assemble debug
         run: >
-          ./gradlew --no-daemon assembleDebug
+          ./gradlew --no-daemon assembleProdDebug assembleDevDebug
           -PversionCode=${{ github.run_number }}
           -PversionName=ci-${{ github.run_number }}
 
-      - name: Upload debug APK
+      - name: Upload debug APKs
         uses: actions/upload-artifact@v7
         with:
           name: apk-debug-${{ github.run_number }}
-          path: app/build/outputs/apk/debug/*.apk
+          path: app/build/outputs/apk/**/*.apk
           if-no-files-found: error
 
       - name: Upload reports

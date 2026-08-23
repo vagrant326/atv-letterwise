@@ -36,6 +36,28 @@ enum class Binding(
         R.string.binding_delete_prompt,
         R.string.binding_delete_fallback,
     ),
+
+    /**
+     * The only binding the keyboard listens for while it is hidden, which is the mechanism that
+     * once left a TV unnavigable — so it is one key, chosen by the user, and unassigned by
+     * default. Reserved keys cannot be picked, so the d-pad is never at risk.
+     */
+    TRIGGER(
+        R.string.binding_trigger,
+        R.string.binding_trigger_prompt,
+        R.string.binding_trigger_fallback,
+    ),
+
+    /**
+     * Optional by design. Holding a numeric key types its digit without any of this, so a key
+     * here only buys a run of digits — and on a TV, digits are rare enough that whether it is
+     * worth a button is the user's call rather than a default.
+     */
+    DIGITS(
+        R.string.binding_digits,
+        R.string.binding_digits_prompt,
+        R.string.binding_digits_fallback,
+    ),
 }
 
 class Preferences(context: Context) {
@@ -111,17 +133,32 @@ class Preferences(context: Context) {
         get() = store.getInt(KEY_DELETE_KEYCODE, KeyBindings.NO_KEY)
         set(value) = store.edit().putInt(KEY_DELETE_KEYCODE, value).apply()
 
-    val customKeys: CustomKeys get() = CustomKeys(languageKeyCode, deleteKeyCode)
+    /** Unassigned by default: nothing is consumed while the keyboard is hidden until asked. */
+    var triggerKeyCode: Int
+        get() = store.getInt(KEY_TRIGGER_KEYCODE, KeyBindings.NO_KEY)
+        set(value) = store.edit().putInt(KEY_TRIGGER_KEYCODE, value).apply()
+
+    /** Unassigned by default: holding a numeric key already types its digit without one. */
+    var digitsKeyCode: Int
+        get() = store.getInt(KEY_DIGITS_KEYCODE, KeyBindings.NO_KEY)
+        set(value) = store.edit().putInt(KEY_DIGITS_KEYCODE, value).apply()
+
+    val customKeys: CustomKeys
+        get() = CustomKeys(languageKeyCode, deleteKeyCode, triggerKeyCode, digitsKeyCode)
 
     fun keyCodeFor(binding: Binding): Int = when (binding) {
         Binding.LANGUAGE -> languageKeyCode
         Binding.DELETE -> deleteKeyCode
+        Binding.TRIGGER -> triggerKeyCode
+        Binding.DIGITS -> digitsKeyCode
     }
 
     fun assign(binding: Binding, keyCode: Int) {
         when (binding) {
             Binding.LANGUAGE -> languageKeyCode = keyCode
             Binding.DELETE -> deleteKeyCode = keyCode
+            Binding.TRIGGER -> triggerKeyCode = keyCode
+            Binding.DIGITS -> digitsKeyCode = keyCode
         }
     }
 
@@ -140,5 +177,7 @@ class Preferences(context: Context) {
         const val KEY_ACTIVE_LANGUAGE = "active_language"
         const val KEY_LANGUAGE_KEYCODE = "language_keycode"
         const val KEY_DELETE_KEYCODE = "delete_keycode"
+        const val KEY_TRIGGER_KEYCODE = "trigger_keycode"
+        const val KEY_DIGITS_KEYCODE = "digits_keycode"
     }
 }

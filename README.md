@@ -3,13 +3,17 @@
 A replacement keyboard for Android TV that types by **prefix disambiguation** instead of
 by driving a cursor around a grid of letters.
 
-Grid keyboards — Gboard TV, LeanKeyboard, the in-app keyboards in Netflix and YouTube —
-all cost roughly **10 keystrokes per character**, because every letter means travelling
-the cursor there and confirming. This types one press per letter and lets a character
-trigram model work out which letter you meant.
+Grid keyboards — Gboard TV, LeanKeyboard and the rest — cost roughly **10 keystrokes per
+character**, because every letter means travelling the cursor there and confirming. This
+types one press per letter and lets a character trigram model work out which letter you
+meant.
 
-**Status: early. Not usable yet.** The disambiguation core and its simulator work and are
-tested; the IME itself is not built.
+**Status: working on a real TV.** `0.1.0` is the first release with the key mapping settled.
+
+**What it cannot do:** Netflix and YouTube draw their own letter grids and never ask Android
+for text input, so no keyboard installed as an input method is ever invoked inside them —
+this one included. It works everywhere that does ask: system and launcher search, Wi-Fi
+setup, browsers, app logins, the Downloader address bar.
 
 ---
 
@@ -31,12 +35,13 @@ case — it is designed for four keys from the start.
 |---|---|
 | `2`–`9` | Select letter group, phone-keypad layout |
 | `0` | Space |
-| `1` | Punctuation; long press toggles PL / EN |
-| `DPAD_UP` / `DOWN` | Walk the candidate letters for the current position |
-| `DPAD_RIGHT` | Accept the current character |
-| `DPAD_LEFT` | Backspace |
-| `DPAD_CENTER` | Enter — finish input |
-| `BACK` | Dismiss; long press clears |
+| `1` | Punctuation; press again to cycle the marks |
+| **Hold `0`–`9`** | The digit printed on the key |
+| `DPAD_UP` / `DOWN`, `CH+` / `CH−` | Walk the candidate letters for the current position |
+| `DPAD_LEFT` / `RIGHT` | Move the caret — moving right also accepts the character in flight |
+| **Hold `DPAD_LEFT`** | Delete |
+| `DPAD_CENTER` | Submit — whatever the field's own action is |
+| `BACK` | Dismiss |
 
 You do not have to press accept. Pressing the next letter's group key accepts the
 previous character automatically, exactly as on a phone keypad — accept exists for the
@@ -45,6 +50,40 @@ end of a word and for deliberately freezing a character you can see is already r
 Both Polish and English are supported, as two trigram tables rather than two
 dictionaries. Anything is typable: proper nouns, film titles, invented words, passwords.
 A word the model has never seen costs extra presses, never a dead end.
+
+### Digits
+
+Holding any number key types the digit printed on it, which covers a digit inside a word.
+A field that declares itself numeric — a PIN box, a phone number — opens in digit mode
+instead, where the whole row is digits and nothing has to be held.
+
+Plenty of fields that hold digits still declare themselves plain text, the Downloader code
+box among them, so the mode can also be switched by hand. That needs a button, which is
+optional on purpose: holding a key is enough for one digit, and on a TV digits are rare
+enough that whether a run of them deserves a dedicated button is your call.
+
+### Buttons you assign yourself
+
+Remotes disagree about which buttons exist and about what they report — the author's `TEXT`
+key reports keycode 300, well outside the standard range, and nothing in the app could have
+guessed that. So four functions are assigned by pressing the button you want, in
+Settings → Buttons, and the app records whatever it reports.
+
+| Function | Without a button assigned |
+|---|---|
+| Language | **Required.** The language otherwise only changes by ticking a different one in settings |
+| Delete | Holding `DPAD_LEFT` deletes |
+| Digits | Holding a number key still gives its digit |
+| Trigger | Nothing raises the keyboard where no field asked for it |
+
+The trigger button raises the keyboard over an app that never requested input. It is the
+only key the keyboard listens for while hidden, and it is unassigned by default: a component
+that intercepts keys ahead of the foreground app is exactly what once left this TV
+unnavigable, so it is one key, chosen deliberately. Note that raising the keyboard there
+gets you the keys and nothing to type into — see the limitation at the top.
+
+Since the number keys carry no letters on a TV remote, the strip draws the mapping. Settings
+→ Key hint switches between the full grid, a single compact line, and off.
 
 ## Updating
 
@@ -92,21 +131,39 @@ The `core` module is plain Kotlin with no Android dependencies, on purpose: the 
 and the shipped IME call the same disambiguation code, so a KSPC measured on a laptop is
 the KSPC that ships.
 
-## Branching
+## Branching and the two channels
 
-| Branch | What runs |
-|---|---|
-| `develop`, `feature/**`, `fix/**`, pull requests | CI — tests, lint, debug APK artifact |
-| `main` | Release — raises the version, signs, publishes to Releases |
+| Branch | What runs | Result |
+|---|---|---|
+| `feature/**`, `fix/**`, pull requests | CI — tests, lint, both debug APKs | artifacts only |
+| `develop` | Release dev | `dev-x.y.z`, installs as **atv-letterwise dev** |
+| `main` | Release | `vx.y.z`, installs as **atv-letterwise** |
 
-**A push to `main` is a release.** There is no separate tagging step: the next version is
-computed from the highest existing tag and raised by a patch. For a minor or major bump,
-run the Release workflow manually from the Actions tab and choose the level.
+**The dev build is a separate application**, not just a separate file: it carries its own
+`applicationId`, so it installs alongside the released one and both appear in the keyboard
+picker. That is the point — an experiment that misbehaves does not take the working keyboard
+with it, and this project has already lost a TV's navigation to one.
+
+Each channel counts its own versions and updates only from its own releases, matched by tag
+prefix. A dev build will never offer to install a production APK over itself.
+
+Dev releases are published as prereleases, so they do not show up as "Latest" on the releases
+page — look further down the list, or just use the `latest-dev` address, which always points
+at the newest one.
+
+Day to day: work on `develop`, which publishes a dev build on every push. To ship, open a
+pull request from `develop` to `main` and merge it. **Do not delete `develop`** — it is
+long-lived. After merging, bring it back in line so the next dev release contains the merge:
+
+```bash
+git switch develop && git merge --ff-only main && git push
+```
 
 ## Installing
 
 In the AFTVnews Downloader app, enter code **8662742**. Seven digits on the remote beats
-entering a URL with a grid keyboard, which is the problem this project exists to solve.
+entering a URL with a grid keyboard, which is the problem this project exists to solve. The
+dev channel is **8946007**, and installs alongside rather than over the released one.
 
 Or use either address directly. Both are permanent and both always serve the newest build:
 

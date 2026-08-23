@@ -51,6 +51,21 @@ class SupportActivity : Activity() {
                     gravity = Gravity.CENTER_HORIZONTAL
                 }
             )
+            addView(
+                label(getString(R.string.support_or), MUTED, 13f).apply {
+                    setPadding(0, dp(12), 0, 0)
+                    gravity = Gravity.CENTER_HORIZONTAL
+                }
+            )
+            // Spelled out as well as encoded: a QR is no use to anyone without a phone in
+            // reach, and this is short enough to read off the screen and type.
+            addView(
+                label(getString(R.string.support_url), Color.WHITE, 17f).apply {
+                    typeface = android.graphics.Typeface.MONOSPACE
+                    setPadding(0, dp(4), 0, 0)
+                    gravity = Gravity.CENTER_HORIZONTAL
+                }
+            )
         }
 
         val content = LinearLayout(this).apply {
