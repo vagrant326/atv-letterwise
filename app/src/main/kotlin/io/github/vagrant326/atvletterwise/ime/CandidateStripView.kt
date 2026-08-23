@@ -16,6 +16,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import io.github.vagrant326.atvletterwise.R
 import io.github.vagrant326.atvletterwise.core.Partition
+import io.github.vagrant326.atvletterwise.model.Language
 import io.github.vagrant326.atvletterwise.settings.HintMode
 
 /**
@@ -51,6 +52,13 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
     }
 
     private val keypadCells = mutableMapOf<Char, TextView>()
+
+    /**
+     * Which language's letters the grid currently spells out, so a change can be noticed. Polish
+     * carries nine more letters on the same eight keys, so the grid is wrong rather than merely
+     * stale after a switch.
+     */
+    private var keypadLanguage: Language? = null
 
     private val languageValue = hintValue()
     private val deleteValue = hintValue()
@@ -115,8 +123,11 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
     fun update(state: StripState) {
         candidateRow.text = candidateRow(state)
 
-        if (keypad.childCount == 0) {
+        if (keypadLanguage != state.language) {
+            keypad.removeAllViews()
+            keypadCells.clear()
             buildKeypad(state.partition)
+            keypadLanguage = state.language
         }
         val keypadVisible = state.hintMode == HintMode.KEYPAD && !state.digits
         hintRow.visibility = if (keypadVisible) VISIBLE else GONE
