@@ -36,6 +36,12 @@ class SettingsActivity : Activity() {
 
     private lateinit var preferences: Preferences
 
+    /**
+     * The binding rows are the only ones whose value is changed somewhere else. Everything else
+     * on this screen changes in place and updates its own text in the click handler.
+     */
+    private val bindingLabels = mutableMapOf<Binding, TextView>()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         preferences = Preferences(this)
@@ -105,6 +111,21 @@ class SettingsActivity : Activity() {
                 )
             }
         )
+    }
+
+    /**
+     * `KeyCaptureActivity` writes the new code straight to preferences and finishes, so the
+     * labels built in [onCreate] are stale on the way back and stayed stale until the process
+     * died — which read as a change that had not been saved, when it always had been.
+     *
+     * Only the labels are re-read. Rebuilding the content view here would work too and would
+     * drop d-pad focus on every return, which on a TV is worse than what it fixes.
+     */
+    override fun onResume() {
+        super.onResume()
+        for ((binding, label) in bindingLabels) {
+            label.text = bindingLabel(binding)
+        }
     }
 
     /**
@@ -199,19 +220,24 @@ class SettingsActivity : Activity() {
     private fun checkbox(checked: Boolean) = if (checked) "☑" else "☐"
 
     private fun captureRow(binding: Binding): View {
+        val row = navigationRow(bindingLabel(binding)) {
+            startActivity(
+                Intent(this, KeyCaptureActivity::class.java)
+                    .putExtra(KeyCaptureActivity.EXTRA_BINDING, binding.name)
+            )
+        }
+        bindingLabels[binding] = row.getChildAt(0) as TextView
+        return row
+    }
+
+    private fun bindingLabel(binding: Binding): String {
         val code = preferences.keyCodeFor(binding)
         val value = if (code == KeyBindings.NO_KEY) {
             getString(R.string.settings_binding_unset)
         } else {
             KeyEvent.keyCodeToString(code).removePrefix("KEYCODE_")
         }
-        val label = getString(R.string.settings_binding_row, getString(binding.titleRes), value)
-        return navigationRow(label) {
-            startActivity(
-                Intent(this, KeyCaptureActivity::class.java)
-                    .putExtra(KeyCaptureActivity.EXTRA_BINDING, binding.name)
-            )
-        }
+        return getString(R.string.settings_binding_row, getString(binding.titleRes), value)
     }
 
     /**
