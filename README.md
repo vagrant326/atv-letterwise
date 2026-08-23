@@ -3,17 +3,20 @@
 A replacement keyboard for Android TV that types by **prefix disambiguation** instead of
 by driving a cursor around a grid of letters.
 
-Grid keyboards — Gboard TV, LeanKeyboard and the rest — cost roughly **10 keystrokes per
-character**, because every letter means travelling the cursor there and confirming. This
-types one press per letter and lets a character trigram model work out which letter you
-meant.
+Grid keyboards — Gboard TV, LeanKeyboard, the in-app keyboards in Netflix and YouTube —
+all cost roughly **10 keystrokes per character**, because every letter means travelling
+the cursor there and confirming. This types one press per letter and lets a character
+trigram model work out which letter you meant.
 
 **Status: working on a real TV.** `0.1.0` is the first release with the key mapping settled.
 
-**What it cannot do:** Netflix and YouTube draw their own letter grids and never ask Android
-for text input, so no keyboard installed as an input method is ever invoked inside them —
-this one included. It works everywhere that does ask: system and launcher search, Wi-Fi
-setup, browsers, app logins, the Downloader address bar.
+**Netflix and YouTube need one thing set up.** They never focus a text field, so nothing
+raises the keyboard for you there. Assign a **trigger button** (Settings → Buttons) and press
+it on their search screen — the keyboard comes up and types. Film titles and channel names
+are the workload this project exists for, so this is the setup step worth doing first.
+
+Everywhere that does ask Android for text — system and launcher search, Wi-Fi setup, browsers,
+app logins, the Downloader address bar — it appears on its own.
 
 ---
 
@@ -74,13 +77,13 @@ Settings → Buttons, and the app records whatever it reports.
 | Language | **Required.** The language otherwise only changes by ticking a different one in settings |
 | Delete | Holding `DPAD_LEFT` deletes |
 | Digits | Holding a number key still gives its digit |
-| Trigger | Nothing raises the keyboard where no field asked for it |
+| Trigger | **Needed for Netflix and YouTube.** Nothing raises the keyboard where no field asked for it |
 
-The trigger button raises the keyboard over an app that never requested input. It is the
-only key the keyboard listens for while hidden, and it is unassigned by default: a component
-that intercepts keys ahead of the foreground app is exactly what once left this TV
-unnavigable, so it is one key, chosen deliberately. Note that raising the keyboard there
-gets you the keys and nothing to type into — see the limitation at the top.
+The trigger button raises the keyboard over an app that never requested input, which is what
+makes Netflix and YouTube search reachable at all. It is the only key the keyboard listens for
+while hidden, and it is unassigned by default: a component that intercepts keys ahead of the
+foreground app is exactly what once left this TV unnavigable, so it is one key, chosen
+deliberately rather than a default nobody picked.
 
 Since the number keys carry no letters on a TV remote, the strip draws the mapping. Settings
 → Key hint switches between the full grid, a single compact line, and off.
@@ -104,8 +107,9 @@ store, so it has no other way to update itself.
 What they are allowed to do here:
 
 - **The IME process never opens a socket and never installs anything.** All of it lives in
-  a separate process (`:updater`) — the update activity and the `FileProvider` that hands
-  the APK over. The component handling your keystrokes contains none of that code.
+  a separate process (`:updater`): one activity, which downloads the APK and streams it into
+  a `PackageInstaller` session. The component handling your keystrokes contains none of that
+  code, and there is no exported provider — nothing else on the device can reach the file.
 - **Nothing runs unless you press a button.** No background job, no boot receiver, no
   periodic poll, no check when the keyboard starts.
 - **Two requests, no payload.** One `GET` for the latest release tag, one for the APK. No
