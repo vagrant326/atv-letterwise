@@ -11,7 +11,7 @@
 
     <string name="binding_language">Klawisz języka</string>
     <string name="binding_language_prompt">Naciśnij klawisz, którym chcesz przełączać język</string>
-    <string name="binding_language_fallback">Przytrzymanie 1 i tak otwiera listę języków.</string>
+    <string name="binding_language_fallback">Bez tego klawisza język zmienia się tylko przez zaznaczenie innego powyżej.</string>
     <string name="binding_delete">Klawisz usuwania</string>
     <string name="binding_delete_prompt">Naciśnij klawisz, którym chcesz usuwać</string>
     <string name="binding_delete_fallback">Przytrzymanie strzałki w lewo i tak usuwa.</string>
@@ -28,14 +28,14 @@
     <string name="settings_key_hint">Podpowiedź klawiszy</string>
     <string name="settings_language_note">Klawisz języka przechodzi po zaznaczonych, w tej kolejności.</string>
     <string name="settings_language_minimum">Przynajmniej jeden język musi zostać włączony.</string>
-    <string name="settings_buttons_note">Piloty różnią się tym, jakie klawisze mają i co zgłaszają. Naciśnij klawisz, który chcesz, a zostanie zapisany. Obie funkcje pozostają dostępne i bez tego.</string>
+    <string name="settings_buttons_note">Piloty różnią się tym, jakie klawisze mają i co zgłaszają. Naciśnij klawisz, który chcesz, a zostanie zapisany. Usuwanie i cyfry działają bez tego; przełączanie języka wymaga własnego klawisza.</string>
     <string name="settings_binding_row">%1$s: %2$s</string>
     <string name="settings_binding_unset">nieustawiony</string>
     <string name="settings_system_keyboard">Systemowe ustawienia klawiatur</string>
     <string name="settings_system_keyboard_note">Wychodzi z tej aplikacji. Tam włączasz i przełączasz aktywną klawiaturę.</string>
     <string name="settings_check_updates">Sprawdź aktualizacje</string>
     <string name="settings_updates_note">Jedyna rzecz tutaj, która korzysta z sieci. Działa w osobnym procesie, tylko po naciśnięciu, i nic nie wysyła. To, co piszesz, nigdy nie opuszcza urządzenia.</string>
-    <string name="settings_typing_note">2-9 wybierają grupę liter. 0 to spacja. 1 to interpunkcja, a przytrzymanie otwiera listę języków. Góra i dół przechodzą po alternatywach, tak samo jak kanał w górę i w dół. Lewo i prawo przesuwają karetkę. Przytrzymanie lewo usuwa. Center zatwierdza, back zamyka.\n\nZatwierdzanie jest opcjonalne: naciśnięcie kolejnej grupy samo zatwierdza poprzednią literę.\n\nPrzytrzymanie 0 przełącza klawisze numeryczne między literami a cyframi. Pole, które samo zgłasza, że oczekuje liczb, otwiera się już w trybie cyfr.</string>
+    <string name="settings_typing_note">2-9 wybierają grupę liter. 0 to spacja. 1 to interpunkcja, a kolejne naciśnięcia przechodzą po znakach. Góra i dół przechodzą po alternatywach, tak samo jak kanał w górę i w dół. Lewo i prawo przesuwają karetkę. Przytrzymanie lewo usuwa. Center zatwierdza, back zamyka.\n\nZatwierdzanie jest opcjonalne: naciśnięcie kolejnej grupy samo zatwierdza poprzednią literę.\n\nPrzytrzymanie dowolnego z 0-9 wpisuje nadrukowaną na nim cyfrę, co wystarcza na cyfrę w środku słowa. Pole, które prosi o liczby, otwiera się od razu w trybie cyfr, a klawisz powyżej przełącza ten tryb ręcznie na dłuższy ciąg.</string>
     <string name="settings_scratch_hint">Pisz tutaj</string>
     <string name="settings_scratch_note">Ustaw focus na tym polu, żeby wywołać klawiaturę. Nic tu nie jest zapisywane.</string>
 
@@ -101,6 +101,10 @@
     <string name="binding_trigger">Klawisz wzbudzania</string>
     <string name="binding_trigger_prompt">Naciśnij klawisz, którym chcesz wywołać klawiaturę w dowolnym miejscu</string>
     <string name="binding_trigger_fallback">Domyślnie nieprzypisany, i jedyny klawisz, którego klawiatura nasłuchuje, będąc ukryta. Nic innego jej nie wywoła w aplikacji, która nie prosi o tekst.</string>
+
+    <string name="binding_digits">Klawisz cyfr</string>
+    <string name="binding_digits_prompt">Naciśnij klawisz, którym chcesz przełączać litery i cyfry</string>
+    <string name="binding_digits_fallback">Opcjonalny. Przytrzymanie klawisza numerycznego i tak wpisuje nadrukowaną na nim cyfrę; osobny klawisz opłaca się dopiero na dłuższy ciąg cyfr.</string>
     <string name="strip_no_editor">nie ma gdzie pisać — ta aplikacja nie poprosiła o wejście</string>
 
     <string name="settings_section_support">Wsparcie</string>
@@ -121,8 +125,11 @@
     <string name="strip_hint_submit">zatwierdź</string>
     <string name="strip_caret_keys">lewo / prawo</string>
     <string name="strip_submit_key">center</string>
-    <string name="strip_fallback_language">przytrzymaj 1</string>
+    <string name="strip_fallback_language">nieustawiony</string>
     <string name="strip_fallback_delete">przytrzymaj lewo</string>
     <string name="strip_space">spacja</string>
-    <string name="strip_digits">cyfry — przytrzymaj 0, żeby wrócić do liter</string>
+    <string name="strip_digits">cyfry</string>
+    <string name="strip_digits_exit">cyfry — %1$s wraca do liter</string>
+    <string name="strip_hint_digits">cyfry</string>
+    <string name="strip_fallback_digits">przytrzymaj 0-9</string>
 </resources>
