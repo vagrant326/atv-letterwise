@@ -3,13 +3,17 @@
 A replacement keyboard for Android TV that types by **prefix disambiguation** instead of
 by driving a cursor around a grid of letters.
 
-Grid keyboards — Gboard TV, LeanKeyboard, the in-app keyboards in Netflix and YouTube —
-all cost roughly **10 keystrokes per character**, because every letter means travelling
-the cursor there and confirming. This types one press per letter and lets a character
-trigram model work out which letter you meant.
+Grid keyboards — Gboard TV, LeanKeyboard and the rest — cost roughly **10 keystrokes per
+character**, because every letter means travelling the cursor there and confirming. This
+types one press per letter and lets a character trigram model work out which letter you
+meant.
 
-**Status: early. Not usable yet.** The disambiguation core and its simulator work and are
-tested; the IME itself is not built.
+**Status: working on a real TV.** `0.1.0` is the first release with the key mapping settled.
+
+**What it cannot do:** Netflix and YouTube draw their own letter grids and never ask Android
+for text input, so no keyboard installed as an input method is ever invoked inside them —
+this one included. It works everywhere that does ask: system and launcher search, Wi-Fi
+setup, browsers, app logins, the Downloader address bar.
 
 ---
 
@@ -31,12 +35,13 @@ case — it is designed for four keys from the start.
 |---|---|
 | `2`–`9` | Select letter group, phone-keypad layout |
 | `0` | Space |
-| `1` | Punctuation; long press toggles PL / EN |
-| `DPAD_UP` / `DOWN` | Walk the candidate letters for the current position |
-| `DPAD_RIGHT` | Accept the current character |
-| `DPAD_LEFT` | Backspace |
-| `DPAD_CENTER` | Enter — finish input |
-| `BACK` | Dismiss; long press clears |
+| `1` | Punctuation; press again to cycle the marks |
+| **Hold `0`–`9`** | The digit printed on the key |
+| `DPAD_UP` / `DOWN`, `CH+` / `CH−` | Walk the candidate letters for the current position |
+| `DPAD_LEFT` / `RIGHT` | Move the caret — moving right also accepts the character in flight |
+| **Hold `DPAD_LEFT`** | Delete |
+| `DPAD_CENTER` | Submit — whatever the field's own action is |
+| `BACK` | Dismiss |
 
 You do not have to press accept. Pressing the next letter's group key accepts the
 previous character automatically, exactly as on a phone keypad — accept exists for the
@@ -45,6 +50,40 @@ end of a word and for deliberately freezing a character you can see is already r
 Both Polish and English are supported, as two trigram tables rather than two
 dictionaries. Anything is typable: proper nouns, film titles, invented words, passwords.
 A word the model has never seen costs extra presses, never a dead end.
+
+### Digits
+
+Holding any number key types the digit printed on it, which covers a digit inside a word.
+A field that declares itself numeric — a PIN box, a phone number — opens in digit mode
+instead, where the whole row is digits and nothing has to be held.
+
+Plenty of fields that hold digits still declare themselves plain text, the Downloader code
+box among them, so the mode can also be switched by hand. That needs a button, which is
+optional on purpose: holding a key is enough for one digit, and on a TV digits are rare
+enough that whether a run of them deserves a dedicated button is your call.
+
+### Buttons you assign yourself
+
+Remotes disagree about which buttons exist and about what they report — the author's `TEXT`
+key reports keycode 300, well outside the standard range, and nothing in the app could have
+guessed that. So four functions are assigned by pressing the button you want, in
+Settings → Buttons, and the app records whatever it reports.
+
+| Function | Without a button assigned |
+|---|---|
+| Language | **Required.** The language otherwise only changes by ticking a different one in settings |
+| Delete | Holding `DPAD_LEFT` deletes |
+| Digits | Holding a number key still gives its digit |
+| Trigger | Nothing raises the keyboard where no field asked for it |
+
+The trigger button raises the keyboard over an app that never requested input. It is the
+only key the keyboard listens for while hidden, and it is unassigned by default: a component
+that intercepts keys ahead of the foreground app is exactly what once left this TV
+unnavigable, so it is one key, chosen deliberately. Note that raising the keyboard there
+gets you the keys and nothing to type into — see the limitation at the top.
+
+Since the number keys carry no letters on a TV remote, the strip draws the mapping. Settings
+→ Key hint switches between the full grid, a single compact line, and off.
 
 ## Updating
 
