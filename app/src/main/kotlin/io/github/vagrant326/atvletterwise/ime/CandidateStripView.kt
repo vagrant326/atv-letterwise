@@ -54,6 +54,7 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
 
     private val languageValue = hintValue()
     private val deleteValue = hintValue()
+    private val digitsValue = hintValue()
 
     /**
      * The assigned keys, named rather than drawn into the grid, and set beside it.
@@ -84,6 +85,10 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
                 hintValue().apply { text = context.getString(R.string.strip_submit_key) },
             )
         )
+        // Nothing on the remote or in the grid says the number keys have a second meaning, and
+        // the grid cannot say it: the cells are three characters wide and already carry the
+        // digit and its letters.
+        addView(hintLine(context.getString(R.string.strip_hint_digits), digitsValue))
     }
 
     /**
@@ -132,6 +137,10 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
             deleteValue.text = keyLabel(
                 state.customKeys.delete,
                 context.getString(R.string.strip_fallback_delete),
+            )
+            digitsValue.text = keyLabel(
+                state.customKeys.digits,
+                context.getString(R.string.strip_fallback_digits),
             )
         }
 
@@ -211,7 +220,18 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
         // carry the one thing the user cannot see otherwise: which mode they are in, and the
         // way back out of it.
         if (state.digits) {
-            val text = SpannableStringBuilder(context.getString(R.string.strip_digits))
+            // Named the way out only when there is one. A numeric field switches the mode on its
+            // own, and promising a button the user never assigned would be worse than silence.
+            val key = state.customKeys.digits
+            val label = if (key == KeyBindings.NO_KEY) {
+                context.getString(R.string.strip_digits)
+            } else {
+                context.getString(
+                    R.string.strip_digits_exit,
+                    KeyEvent.keyCodeToString(key).removePrefix("KEYCODE_"),
+                )
+            }
+            val text = SpannableStringBuilder(label)
             text.setSpan(
                 ForegroundColorSpan(ACCENT),
                 0,

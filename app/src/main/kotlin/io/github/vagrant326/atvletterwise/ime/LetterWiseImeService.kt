@@ -30,8 +30,11 @@ class LetterWiseImeService : InputMethodService() {
     /** The numeric row types digits rather than letter groups. Per field, never remembered. */
     private var digits = false
 
-    /** `0` is down and has not yet been claimed by a hold. Cleared on both exits, and per field. */
-    private var zeroHeld = false
+    /**
+     * A key that is down and whose character is still waiting for the release, or
+     * `KEYCODE_UNKNOWN` for none. Cleared the moment a hold claims the press, and per field.
+     */
+    private var deferredKey = KeyEvent.KEYCODE_UNKNOWN
 
     override fun onCreate() {
         super.onCreate()
@@ -50,7 +53,7 @@ class LetterWiseImeService : InputMethodService() {
         punctuationIndex = -1
         showLanguageChooser = false
         digits = wantsDigits(info)
-        zeroHeld = false
+        deferredKey = KeyEvent.KEYCODE_UNKNOWN
         if (language !in preferences.enabledLanguages) {
             language = preferences.activeLanguage
             composer.useDisambiguator(disambiguatorFor(language), context())
@@ -124,7 +127,10 @@ class LetterWiseImeService : InputMethodService() {
             return true
         }
 
-        if (action !is Action.Punctuation) {
+        // Only another short `1` continues the punctuation cycle. Anything else breaks it —
+        // including holding `1` for the digit — so the next press starts fresh instead of
+        // deleting a character it did not put there.
+        if (action != Action.DeferToRelease || keyCode != KeyEvent.KEYCODE_1) {
             punctuationIndex = -1
         }
         showLanguageChooser = false
@@ -140,16 +146,25 @@ class LetterWiseImeService : InputMethodService() {
                 currentInputConnection?.commitText(action.symbol.toString(), 1)
             }
 
+            // The hold has claimed the press, so the release must not also fire.
+            is Action.Digit -> {
+                deferredKey = KeyEvent.KEYCODE_UNKNOWN
+                if (action.discardsPending) {
+                    composer.clearPending()
+                } else {
+                    resolvePending()
+                }
+                currentInputConnection?.commitText(action.digit.toString(), 1)
+            }
+
             Action.NextCandidate -> composer.nextCandidate()
             Action.PreviousCandidate -> composer.previousCandidate()
-            Action.Punctuation -> cyclePunctuation()
 
-            // Nothing is committed on the way down, so there is nothing to take back here.
-            Action.Zero -> zeroHeld = true
+            // Nothing happens yet. See onKeyUp.
+            Action.DeferToRelease -> deferredKey = keyCode
 
             Action.ToggleDigits -> {
                 resolvePending()
-                zeroHeld = false
                 digits = !digits
             }
 
@@ -203,22 +218,30 @@ class LetterWiseImeService : InputMethodService() {
     }
 
     /**
-     * `0` is the one key that commits on release rather than on press, because it carries both a
-     * character and the digit-mode toggle and a hold arrives as a *second* key-down.
+     * `0` and `1` commit on release rather than on press, because each carries a character *and*
+     * a digit, and a hold arrives as a *second* key-down.
      *
      * Committing on the way down and retracting on the hold was the obvious version and does not
      * work: `commitText` is one-way, so the `getTextBeforeCursor` that would confirm what to
      * retract is answered from before the commit has landed. The retraction then either misses
-     * the character or, unguarded, deletes whatever the user typed before it. Deciding on the
-     * way up needs neither guess — nothing was committed, so nothing has to be un-typed.
+     * the character or, unguarded, deletes whatever the user typed before it. Deciding on the way
+     * up needs neither guess — nothing was committed, so nothing has to be un-typed.
+     *
+     * `2`-`9` are not deferred. Their short press only sets composing text, which the digit can
+     * drop for free, and deferring them would hold back the letter that makes the keyboard feel
+     * like it is keeping up.
      */
     override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean {
-        if (keyCode != KeyEvent.KEYCODE_0 || !zeroHeld) {
+        if (keyCode != deferredKey) {
             return super.onKeyUp(keyCode, event)
         }
-        zeroHeld = false
-        resolvePending()
-        currentInputConnection?.commitText(if (digits) "0" else " ", 1)
+        deferredKey = KeyEvent.KEYCODE_UNKNOWN
+        if (keyCode == KeyEvent.KEYCODE_1) {
+            cyclePunctuation()
+        } else {
+            resolvePending()
+            currentInputConnection?.commitText(" ", 1)
+        }
         render()
         return true
     }
