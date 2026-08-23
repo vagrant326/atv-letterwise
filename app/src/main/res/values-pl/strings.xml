@@ -34,7 +34,7 @@
     <string name="settings_system_keyboard_note">Wychodzi z tej aplikacji. Tam włączasz i przełączasz aktywną klawiaturę.</string>
     <string name="settings_check_updates">Sprawdź aktualizacje</string>
     <string name="settings_updates_note">Jedyna rzecz tutaj, która korzysta z sieci. Działa w osobnym procesie, tylko po naciśnięciu, i nic nie wysyła. To, co piszesz, nigdy nie opuszcza urządzenia.</string>
-    <string name="settings_typing_note">2-9 wybierają grupę liter. 0 to spacja. 1 to interpunkcja, a przytrzymanie otwiera listę języków. Góra i dół przechodzą po alternatywach, tak samo jak kanał w górę i w dół. Lewo i prawo przesuwają karetkę. Przytrzymanie lewo usuwa. Center zatwierdza, back zamyka.\n\nZatwierdzanie jest opcjonalne: naciśnięcie kolejnej grupy samo zatwierdza poprzednią literę.</string>
+    <string name="settings_typing_note">2-9 wybierają grupę liter. 0 to spacja. 1 to interpunkcja, a przytrzymanie otwiera listę języków. Góra i dół przechodzą po alternatywach, tak samo jak kanał w górę i w dół. Lewo i prawo przesuwają karetkę. Przytrzymanie lewo usuwa. Center zatwierdza, back zamyka.\n\nZatwierdzanie jest opcjonalne: naciśnięcie kolejnej grupy samo zatwierdza poprzednią literę.\n\nPrzytrzymanie 0 przełącza klawisze numeryczne między literami a cyframi. Pole, które samo zgłasza, że oczekuje liczb, otwiera się już w trybie cyfr.</string>
     <string name="settings_scratch_hint">Pisz tutaj</string>
     <string name="settings_scratch_note">Ustaw focus na tym polu, żeby wywołać klawiaturę. Nic tu nie jest zapisywane.</string>
 
@@ -123,4 +123,5 @@
     <string name="strip_fallback_language">przytrzymaj 1</string>
     <string name="strip_fallback_delete">przytrzymaj lewo</string>
     <string name="strip_space">spacja</string>
+    <string name="strip_digits">cyfry — przytrzymaj 0, żeby wrócić do liter</string>
 </resources>

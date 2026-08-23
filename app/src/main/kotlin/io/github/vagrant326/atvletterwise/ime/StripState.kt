@@ -21,4 +21,9 @@ data class StripState(
      * which is the answer that experiment exists to produce.
      */
     val hasEditor: Boolean,
+    /**
+     * Whether the numeric row is typing digits. The letter legend is hidden while it is, because
+     * a legend that promises `abc` on a key now producing `2` is worse than no legend at all.
+     */
+    val digits: Boolean,
 )

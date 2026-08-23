@@ -2,6 +2,7 @@ package io.github.vagrant326.atvletterwise.ime
 
 import android.inputmethodservice.InputMethodService
 import android.os.Build
+import android.text.InputType
 import android.view.KeyEvent
 import android.view.View
 import android.view.inputmethod.EditorInfo
@@ -26,6 +27,9 @@ class LetterWiseImeService : InputMethodService() {
     private var showLanguageChooser = false
     private var composing = false
 
+    /** The numeric row types digits rather than letter groups. Per field, never remembered. */
+    private var digits = false
+
     override fun onCreate() {
         super.onCreate()
         models = ModelRepository(this)
@@ -42,12 +46,29 @@ class LetterWiseImeService : InputMethodService() {
         composer.clearPending()
         punctuationIndex = -1
         showLanguageChooser = false
+        digits = wantsDigits(info)
         if (language !in preferences.enabledLanguages) {
             language = preferences.activeLanguage
             composer.useDisambiguator(disambiguatorFor(language), context())
         }
         moveCaretToEnd(info)
         render()
+    }
+
+    /**
+     * A field that declares itself numeric has no use for letter prediction, so it starts in
+     * digit mode. Recomputed for every field rather than remembered: a manual switch made in a
+     * PIN box must not follow the user into the next search query.
+     *
+     * Plenty of fields that mostly hold digits still declare themselves plain text — the
+     * pairing-code box this was found in is one — which is why the manual toggle exists and
+     * this is only the shortcut for fields that are honest.
+     */
+    private fun wantsDigits(info: EditorInfo?): Boolean {
+        val variant = (info?.inputType ?: return false) and InputType.TYPE_MASK_CLASS
+        return variant == InputType.TYPE_CLASS_NUMBER ||
+            variant == InputType.TYPE_CLASS_PHONE ||
+            variant == InputType.TYPE_CLASS_DATETIME
     }
 
     /**
@@ -87,7 +108,7 @@ class LetterWiseImeService : InputMethodService() {
             return super.onKeyDown(keyCode, event)
         }
 
-        val action = KeyBindings.of(keyCode, event.repeatCount, preferences.customKeys)
+        val action = KeyBindings.of(keyCode, event.repeatCount, preferences.customKeys, digits)
             ?: return super.onKeyDown(keyCode, event)
 
         if (action == Action.Ignore) {
@@ -118,6 +139,17 @@ class LetterWiseImeService : InputMethodService() {
             Action.NextCandidate -> composer.nextCandidate()
             Action.PreviousCandidate -> composer.previousCandidate()
             Action.Punctuation -> cyclePunctuation()
+
+            // A long press arrives as a second event, so `0`'s short press has already put a
+            // character in the field by the time this runs — a space in letter mode, a `0` in
+            // digit mode. Either way take it back: the user asked for the mode, not the
+            // character.
+            Action.ToggleDigits -> {
+                resolvePending()
+                currentInputConnection?.deleteSurroundingText(1, 0)
+                digits = !digits
+            }
+
             Action.NextLanguage -> stepLanguage(1)
             Action.ShowLanguages -> showLanguageChooser = true
             Action.Ignore -> Unit
@@ -285,6 +317,7 @@ class LetterWiseImeService : InputMethodService() {
                 showLanguageChooser = showLanguageChooser,
                 customKeys = preferences.customKeys,
                 hasEditor = connection != null,
+                digits = digits,
             )
         )
     }

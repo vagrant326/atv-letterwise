@@ -113,11 +113,12 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
         if (keypad.childCount == 0) {
             buildKeypad(state.partition)
         }
-        val keypadVisible = state.hintMode == HintMode.KEYPAD
+        val keypadVisible = state.hintMode == HintMode.KEYPAD && !state.digits
         hintRow.visibility = if (keypadVisible) VISIBLE else GONE
-        inlineHint.visibility = if (state.hintMode == HintMode.INLINE) VISIBLE else GONE
+        inlineHint.visibility =
+            if (state.hintMode == HintMode.INLINE && !state.digits) VISIBLE else GONE
 
-        if (state.hintMode == HintMode.INLINE) {
+        if (inlineHint.visibility == VISIBLE) {
             val space = context.getString(R.string.strip_space)
             inlineHint.text = state.partition.groups.entries
                 .sortedBy { it.key }
@@ -199,6 +200,20 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
             val text = SpannableStringBuilder(context.getString(R.string.strip_no_editor))
             text.setSpan(
                 ForegroundColorSpan(WARNING),
+                0,
+                text.length,
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
+            )
+            return text
+        }
+
+        // Digits are deterministic, so there are no alternatives to walk and the row is free to
+        // carry the one thing the user cannot see otherwise: which mode they are in, and the
+        // way back out of it.
+        if (state.digits) {
+            val text = SpannableStringBuilder(context.getString(R.string.strip_digits))
+            text.setSpan(
+                ForegroundColorSpan(ACCENT),
                 0,
                 text.length,
                 Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,

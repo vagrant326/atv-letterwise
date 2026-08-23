@@ -47,7 +47,7 @@
     <string name="settings_system_keyboard_note">Leaves this app. Enable or switch the active keyboard there.</string>
     <string name="settings_check_updates">Check for updates</string>
     <string name="settings_updates_note">The only thing here that uses the network. It runs in a separate process, only when you press it, and sends nothing. What you type never leaves the device.</string>
-    <string name="settings_typing_note">2-9 pick a letter group. 0 is space. 1 is punctuation, and holding it opens the language list. Up and down walk the alternatives, and so do channel up and down. Left and right move the caret. Holding left deletes. Centre submits, back closes.\n\nAccept is optional: pressing the next group key accepts the previous letter on its own.</string>
+    <string name="settings_typing_note">2-9 pick a letter group. 0 is space. 1 is punctuation, and holding it opens the language list. Up and down walk the alternatives, and so do channel up and down. Left and right move the caret. Holding left deletes. Centre submits, back closes.\n\nAccept is optional: pressing the next group key accepts the previous letter on its own.\n\nHolding 0 switches the number keys between letters and digits. A field that says it wants numbers opens in digit mode already.</string>
     <string name="settings_scratch_hint">Type here</string>
     <string name="settings_scratch_note">Focus this field to bring the keyboard up. Nothing here is saved.</string>
 
@@ -137,4 +137,5 @@
     <string name="strip_fallback_language">hold 1</string>
     <string name="strip_fallback_delete">hold left</string>
     <string name="strip_space">space</string>
+    <string name="strip_digits">digits — hold 0 for letters</string>
 </resources>

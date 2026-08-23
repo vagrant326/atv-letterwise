@@ -16,6 +16,7 @@ sealed interface Action {
     data object NextLanguage : Action
     data object ShowLanguages : Action
     data object Dismiss : Action
+    data object ToggleDigits : Action
 
     /** Consume the event and do nothing. Held keys repeat; only the first repeat counts. */
     data object Ignore : Action
@@ -52,8 +53,9 @@ object KeyBindings {
      * @param repeatCount straight from the [KeyEvent]. A held key repeats every few hundred
      *   milliseconds, so acting on every repeat turns one long press into a spin. Only
      *   `repeatCount == 1` is a long press; later repeats are swallowed.
+     * @param digits whether the numeric row is currently typing digits instead of letters.
      */
-    fun of(keyCode: Int, repeatCount: Int, custom: CustomKeys): Action? {
+    fun of(keyCode: Int, repeatCount: Int, custom: CustomKeys, digits: Boolean): Action? {
         if (repeatCount > 1) {
             return Action.Ignore
         }
@@ -64,6 +66,17 @@ object KeyBindings {
         }
         if (custom.delete != NO_KEY && keyCode == custom.delete) {
             return Action.Delete
+        }
+
+        // Letters spend the whole numeric row, so digits need a mode rather than a key each.
+        // Holding `0` is the way in and out: it is the one numeric key with no long press
+        // already spoken for, and it stays the same gesture in both directions so there is
+        // only one thing to remember.
+        if (keyCode == KeyEvent.KEYCODE_0 && longPress) {
+            return Action.ToggleDigits
+        }
+        if (digits && keyCode in KeyEvent.KEYCODE_0..KeyEvent.KEYCODE_9) {
+            return Action.Symbol('0' + (keyCode - KeyEvent.KEYCODE_0))
         }
 
         return when {
