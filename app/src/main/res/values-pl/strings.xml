@@ -98,9 +98,9 @@
     <string name="update_privacy">Sprawdzane tylko po naciśnięciu. Jedno zapytanie o wersję, jedno o plik, nic nie jest wysyłane. To, co piszesz, nigdy nie opuszcza urządzenia.</string>
     <string name="update_back">BACK wraca do ustawień.</string>
 
-    <string name="binding_trigger">Klawisz wyzwalania (eksperyment)</string>
+    <string name="binding_trigger">Klawisz wzbudzania</string>
     <string name="binding_trigger_prompt">Naciśnij klawisz, którym chcesz wywołać klawiaturę w dowolnym miejscu</string>
-    <string name="binding_trigger_fallback">Domyślnie nieprzypisany. To jedyny klawisz, którego klawiatura nasłuchuje, będąc ukryta — zostaw pusty, jeśli nie testujesz.</string>
+    <string name="binding_trigger_fallback">Domyślnie nieprzypisany, i jedyny klawisz, którego klawiatura nasłuchuje, będąc ukryta. Nic innego jej nie wywoła w aplikacji, która nie prosi o tekst.</string>
     <string name="strip_no_editor">nie ma gdzie pisać — ta aplikacja nie poprosiła o wejście</string>
 
     <string name="settings_section_support">Wsparcie</string>

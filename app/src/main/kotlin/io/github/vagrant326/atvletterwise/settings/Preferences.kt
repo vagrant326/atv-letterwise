@@ -38,9 +38,9 @@ enum class Binding(
     ),
 
     /**
-     * Experimental. This is the only binding the keyboard listens for while it is hidden, which
-     * is the mechanism that once left a TV unnavigable — so it is one key, chosen by the user,
-     * and unassigned by default. Reserved keys cannot be picked, so the d-pad is never at risk.
+     * The only binding the keyboard listens for while it is hidden, which is the mechanism that
+     * once left a TV unnavigable — so it is one key, chosen by the user, and unassigned by
+     * default. Reserved keys cannot be picked, so the d-pad is never at risk.
      */
     TRIGGER(
         R.string.binding_trigger,

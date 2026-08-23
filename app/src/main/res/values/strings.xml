@@ -112,9 +112,9 @@
     <string name="update_privacy">Checked only when you press it. One request for the version, one for the file, nothing sent. What you type never leaves the device.</string>
     <string name="update_back">BACK returns to settings.</string>
 
-    <string name="binding_trigger">Trigger key (experimental)</string>
+    <string name="binding_trigger">Trigger key</string>
     <string name="binding_trigger_prompt">Press the button you want for raising the keyboard anywhere</string>
-    <string name="binding_trigger_fallback">Unassigned by default. This is the only key the keyboard listens for while hidden, so leave it unset unless you are testing.</string>
+    <string name="binding_trigger_fallback">Unassigned by default, and the only key the keyboard listens for while hidden. Nothing else raises it in an app that never asks for text.</string>
     <string name="strip_no_editor">nowhere to type — this app never asked for input</string>
 
     <string name="settings_section_support">Support</string>

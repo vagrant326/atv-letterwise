@@ -194,8 +194,8 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
             return text
         }
 
-        // Says so rather than looking broken: raised by the experimental trigger over an app
-        // that never asked for input, there is nowhere to send characters.
+        // Says so rather than looking broken: raised by the trigger key over an app that never
+        // asked for input, there is nowhere to send characters.
         if (!state.hasEditor) {
             val text = SpannableStringBuilder(context.getString(R.string.strip_no_editor))
             text.setSpan(

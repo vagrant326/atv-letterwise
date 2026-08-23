@@ -16,9 +16,9 @@ data class StripState(
     val showLanguageChooser: Boolean,
     val customKeys: CustomKeys,
     /**
-     * Whether there is anywhere to send characters. Normally always true; false when the
-     * keyboard was raised by the experimental trigger over an app that never asked for input,
-     * which is the answer that experiment exists to produce.
+     * Whether there is anywhere to send characters. True whenever a field opened the keyboard;
+     * false when the trigger key raised it over an app that never asked for input, where the
+     * keys arrive but there is no connection to write through.
      */
     val hasEditor: Boolean,
     /**

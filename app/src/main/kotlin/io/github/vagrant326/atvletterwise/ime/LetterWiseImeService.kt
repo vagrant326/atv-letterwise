@@ -102,7 +102,7 @@ class LetterWiseImeService : InputMethodService() {
         if (!isInputViewShown) {
             val trigger = preferences.triggerKeyCode
             if (trigger != KeyBindings.NO_KEY && keyCode == trigger && event.repeatCount == 0) {
-                showSelfForExperiment()
+                raiseSelf()
                 return true
             }
             return super.onKeyDown(keyCode, event)
@@ -200,17 +200,17 @@ class LetterWiseImeService : InputMethodService() {
     }
 
     /**
-     * The experiment: raise the keyboard without an app having asked for it, to find out
-     * whether text can then be put into something like YouTube search.
+     * Raises the keyboard without an app having asked for it, which is the whole of what the
+     * trigger key does.
      *
-     * Expected to half-work. `requestShowSelf` can put the window on screen, but an IME writes
-     * through an `InputConnection` and a view that never requested input does not provide one -
-     * so the likely outcome is a visible keyboard with nowhere to send characters. The strip
-     * says which of the two happened rather than leaving it to guesswork; see
+     * `requestShowSelf` puts the window on screen, but an IME writes through an
+     * `InputConnection` and a view that never requested input does not provide one - so over an
+     * app that renders its own keyboard, the keys arrive and there is nowhere to send them. The
+     * strip says which of the two happened rather than leaving it to guesswork; see
      * docs/30-global-key-capture.md for why the accessibility route is the only one with both
      * halves.
      */
-    private fun showSelfForExperiment() {
+    private fun raiseSelf() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             requestShowSelf(0)
         }
