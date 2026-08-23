@@ -108,6 +108,10 @@ with it, and this project has already lost a TV's navigation to one.
 Each channel counts its own versions and updates only from its own releases, matched by tag
 prefix. A dev build will never offer to install a production APK over itself.
 
+Dev releases are published as prereleases, so they do not show up as "Latest" on the releases
+page — look further down the list, or just use the `latest-dev` address, which always points
+at the newest one.
+
 Day to day: work on `develop`, which publishes a dev build on every push. To ship, open a
 pull request from `develop` to `main` and merge it. **Do not delete `develop`** — it is
 long-lived. After merging, bring it back in line so the next dev release contains the merge:
@@ -119,7 +123,8 @@ git switch develop && git merge --ff-only main && git push
 ## Installing
 
 In the AFTVnews Downloader app, enter code **8662742**. Seven digits on the remote beats
-entering a URL with a grid keyboard, which is the problem this project exists to solve.
+entering a URL with a grid keyboard, which is the problem this project exists to solve. The
+dev channel is **8946007**, and installs alongside rather than over the released one.
 
 Or use either address directly. Both are permanent and both always serve the newest build:
 
