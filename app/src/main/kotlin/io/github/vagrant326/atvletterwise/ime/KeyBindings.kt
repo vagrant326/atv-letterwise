@@ -18,6 +18,12 @@ sealed interface Action {
     data object Dismiss : Action
     data object ToggleDigits : Action
 
+    /**
+     * The `0` key went down. What it means is not decided yet: released it is a character, held
+     * it is [ToggleDigits]. Resolved in `LetterWiseImeService.onKeyUp`.
+     */
+    data object Zero : Action
+
     /** Consume the event and do nothing. Held keys repeat; only the first repeat counts. */
     data object Ignore : Action
 }
@@ -72,10 +78,14 @@ object KeyBindings {
         // Holding `0` is the way in and out: it is the one numeric key with no long press
         // already spoken for, and it stays the same gesture in both directions so there is
         // only one thing to remember.
-        if (keyCode == KeyEvent.KEYCODE_0 && longPress) {
-            return Action.ToggleDigits
+        //
+        // Which is why `0` never resolves to a character here. Carrying both a character and a
+        // mode means the character cannot be committed until the key is released - see
+        // [Action.Zero].
+        if (keyCode == KeyEvent.KEYCODE_0) {
+            return if (longPress) Action.ToggleDigits else Action.Zero
         }
-        if (digits && keyCode in KeyEvent.KEYCODE_0..KeyEvent.KEYCODE_9) {
+        if (digits && keyCode in KeyEvent.KEYCODE_1..KeyEvent.KEYCODE_9) {
             return Action.Symbol('0' + (keyCode - KeyEvent.KEYCODE_0))
         }
 
@@ -83,7 +93,6 @@ object KeyBindings {
             keyCode == KeyEvent.KEYCODE_1 ->
                 if (longPress) Action.ShowLanguages else Action.Punctuation
 
-            keyCode == KeyEvent.KEYCODE_0 -> Action.Symbol(' ')
             keyCode in KeyEvent.KEYCODE_2..KeyEvent.KEYCODE_9 ->
                 Action.Group('2' + (keyCode - KeyEvent.KEYCODE_2))
 

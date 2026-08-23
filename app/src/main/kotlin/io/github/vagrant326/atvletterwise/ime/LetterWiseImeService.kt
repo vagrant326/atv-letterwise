@@ -30,6 +30,9 @@ class LetterWiseImeService : InputMethodService() {
     /** The numeric row types digits rather than letter groups. Per field, never remembered. */
     private var digits = false
 
+    /** `0` is down and has not yet been claimed by a hold. Cleared on both exits, and per field. */
+    private var zeroHeld = false
+
     override fun onCreate() {
         super.onCreate()
         models = ModelRepository(this)
@@ -47,6 +50,7 @@ class LetterWiseImeService : InputMethodService() {
         punctuationIndex = -1
         showLanguageChooser = false
         digits = wantsDigits(info)
+        zeroHeld = false
         if (language !in preferences.enabledLanguages) {
             language = preferences.activeLanguage
             composer.useDisambiguator(disambiguatorFor(language), context())
@@ -140,21 +144,12 @@ class LetterWiseImeService : InputMethodService() {
             Action.PreviousCandidate -> composer.previousCandidate()
             Action.Punctuation -> cyclePunctuation()
 
-            // A long press arrives as a second event, so `0`'s short press has already put a
-            // character in the field by the time this runs — a space in letter mode, a `0` in
-            // digit mode. Either way take it back: the user asked for the mode, not the
-            // character.
-            //
-            // Checked rather than assumed. A field free to reject what was committed — a filter
-            // that strips spaces, a length cap already reached — would otherwise have a real
-            // character deleted in its place.
+            // Nothing is committed on the way down, so there is nothing to take back here.
+            Action.Zero -> zeroHeld = true
+
             Action.ToggleDigits -> {
                 resolvePending()
-                val committed = if (digits) '0' else ' '
-                val connection = currentInputConnection
-                if (connection?.getTextBeforeCursor(1, 0)?.singleOrNull() == committed) {
-                    connection.deleteSurroundingText(1, 0)
-                }
+                zeroHeld = false
                 digits = !digits
             }
 
@@ -203,6 +198,27 @@ class LetterWiseImeService : InputMethodService() {
             }
         }
 
+        render()
+        return true
+    }
+
+    /**
+     * `0` is the one key that commits on release rather than on press, because it carries both a
+     * character and the digit-mode toggle and a hold arrives as a *second* key-down.
+     *
+     * Committing on the way down and retracting on the hold was the obvious version and does not
+     * work: `commitText` is one-way, so the `getTextBeforeCursor` that would confirm what to
+     * retract is answered from before the commit has landed. The retraction then either misses
+     * the character or, unguarded, deletes whatever the user typed before it. Deciding on the
+     * way up needs neither guess — nothing was committed, so nothing has to be un-typed.
+     */
+    override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean {
+        if (keyCode != KeyEvent.KEYCODE_0 || !zeroHeld) {
+            return super.onKeyUp(keyCode, event)
+        }
+        zeroHeld = false
+        resolvePending()
+        currentInputConnection?.commitText(if (digits) "0" else " ", 1)
         render()
         return true
     }
