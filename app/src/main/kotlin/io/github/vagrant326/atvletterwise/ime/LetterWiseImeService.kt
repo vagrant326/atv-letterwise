@@ -144,9 +144,17 @@ class LetterWiseImeService : InputMethodService() {
             // character in the field by the time this runs — a space in letter mode, a `0` in
             // digit mode. Either way take it back: the user asked for the mode, not the
             // character.
+            //
+            // Checked rather than assumed. A field free to reject what was committed — a filter
+            // that strips spaces, a length cap already reached — would otherwise have a real
+            // character deleted in its place.
             Action.ToggleDigits -> {
                 resolvePending()
-                currentInputConnection?.deleteSurroundingText(1, 0)
+                val committed = if (digits) '0' else ' '
+                val connection = currentInputConnection
+                if (connection?.getTextBeforeCursor(1, 0)?.singleOrNull() == committed) {
+                    connection.deleteSurroundingText(1, 0)
+                }
                 digits = !digits
             }
 
