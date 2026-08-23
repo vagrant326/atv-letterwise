@@ -12,6 +12,7 @@
     <string name="update_working" translatable="false">…</string>
     <string name="update_percent" translatable="false">%1$d%%</string>
     <string name="update_installing_headline" translatable="false">%1$d kB</string>
+    <string name="settings_source_url" translatable="false">github.com/vagrant326/atv-letterwise</string>
 
     <string name="update_name">LetterWise updates</string>
 
@@ -30,6 +31,7 @@
     <string name="binding_delete_fallback">Holding left deletes either way.</string>
 
     <string name="settings_version">Version %1$s</string>
+    <string name="settings_source">Source at %1$s</string>
     <string name="settings_section_keyboard">Keyboard</string>
     <string name="settings_section_languages">Languages</string>
     <string name="settings_section_buttons">Buttons</string>

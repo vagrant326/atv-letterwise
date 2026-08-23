@@ -55,6 +55,12 @@ class SettingsActivity : Activity() {
 
         content.addView(heading(getString(R.string.ime_name)))
         content.addView(caption(getString(R.string.settings_version, BuildConfig.VERSION_NAME)))
+        // Named here rather than on the support page. The repository is not an ask for money,
+        // and it is not tied to where updates come from either — those may leave GitHub for a
+        // store, while the source stays where it is.
+        content.addView(
+            caption(getString(R.string.settings_source, getString(R.string.settings_source_url)))
+        )
 
         content.addView(sectionLabel(getString(R.string.settings_section_keyboard)))
         content.addView(hintModeRow())

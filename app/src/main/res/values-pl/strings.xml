@@ -17,6 +17,7 @@
     <string name="binding_delete_fallback">Przytrzymanie strzałki w lewo i tak usuwa.</string>
 
     <string name="settings_version">Wersja %1$s</string>
+    <string name="settings_source">Kod źródłowy: %1$s</string>
     <string name="settings_section_keyboard">Klawiatura</string>
     <string name="settings_section_languages">Języki</string>
     <string name="settings_section_buttons">Klawisze</string>
