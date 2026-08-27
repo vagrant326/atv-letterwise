@@ -6,7 +6,7 @@ teaches the model ordinary letter sequences. Wikidata supplies film, series and 
 names, which is the workload the keyboard actually faces and the place where statistics
 from running text generalise worst.
 
-The subtitle download is bounded by default. Character trigrams over a 33-symbol alphabet
+The subtitle download is bounded by default. Character trigrams over a 36-symbol alphabet
 saturate long before the corpus does, so pulling gigabytes would cost bandwidth and buy
 nothing.
 

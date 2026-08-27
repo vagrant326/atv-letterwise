@@ -8,8 +8,9 @@ app/src/main/assets/trigrams-<language>.bin.
 
 The table is **dense**: a flat array of counts indexed by symbol arithmetic, one array per
 order. Sparse storage would be smaller in principle and pointless in practice - the
-alphabet is 27 symbols for English and 33 for Polish, so an order-3 table is a few tens of
-thousands of counts, well under a megabyte. Dense means lookup is index arithmetic with no
+alphabet is 27 symbols for English and 36 for Polish - space plus the 26 Latin letters, plus
+the nine diacritics for Polish - so an order-3 table is a few tens of thousands of counts,
+well under a megabyte. Dense means lookup is index arithmetic with no
 hashing, no allocation and no parsing on the device.
 
 Format, big-endian throughout so the Kotlin side can read it with a plain ByteBuffer:
