@@ -15,6 +15,7 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
 import io.github.vagrant326.atvletterwise.R
+import io.github.vagrant326.atvletterwise.core.LetterCase
 import io.github.vagrant326.atvletterwise.core.Partition
 import io.github.vagrant326.atvletterwise.model.Language
 import io.github.vagrant326.atvletterwise.settings.HintMode
@@ -97,6 +98,9 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
         // the grid cannot say it: the cells are three characters wide and already carry the
         // digit and its letters.
         addView(hintLine(context.getString(R.string.strip_hint_digits), digitsValue))
+        addView(hintLine(context.getString(R.string.strip_hint_case), hintValue().apply {
+            text = context.getString(R.string.strip_case_keys)
+        }))
     }
 
     /**
@@ -252,10 +256,17 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
             return text
         }
 
-        val tag = if (state.trained) {
+        val languageTag = if (state.trained) {
             state.language.label
         } else {
             context.getString(R.string.strip_no_model, state.language.label)
+        }
+        // Named as well as drawn into the candidates, so the state survives a row with nothing
+        // in flight — which is exactly when the user is deciding whether to press the key again.
+        val tag = when (state.letterCase) {
+            LetterCase.LOWER -> languageTag
+            LetterCase.ONCE -> "$languageTag ${context.getString(R.string.strip_case_once)}"
+            LetterCase.LOCKED -> "$languageTag ${context.getString(R.string.strip_case_locked)}"
         }
         val text = SpannableStringBuilder(tag).append("   ")
         text.setSpan(ForegroundColorSpan(DIM), 0, text.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
@@ -269,7 +280,10 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
         }
         alternatives.forEachIndexed { index, candidate ->
             val start = text.length
-            text.append(candidate).append("   ")
+            // Drawn in the case that will actually reach the field. The remote has nothing
+            // printed on it, so a row showing `a b c` while the keyboard is about to type `A`
+            // would be the only thing on screen and still wrong.
+            text.append(state.letterCase.apply(candidate)).append("   ")
             val selected = index == state.composer.alternativeIndex
             text.setSpan(
                 ForegroundColorSpan(if (selected) ACCENT else DIM),

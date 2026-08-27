@@ -19,6 +19,15 @@ sealed interface Action {
     data object ToggleDigits : Action
 
     /**
+     * `abc` → `Abc` → `ABC` → `abc`, from holding `0`.
+     *
+     * `0` because its short press is a space, which commits outright and therefore already waits
+     * for the release — so the hold costs nothing that was not already deferred. It became free
+     * when the digit moved to being the last candidate on its own key.
+     */
+    data object ToggleCase : Action
+
+    /**
      * A key went down whose meaning is not settled yet: released it is a character, held it is
      * [Digit]. Resolved in `LetterWiseImeService.onKeyUp`.
      */
@@ -97,7 +106,7 @@ object KeyBindings {
         // Swallowed rather than allowed to fall through. On `2`-`9` a hold would otherwise arrive
         // as a second [Action.Group] and restart the candidate list under the user's thumb.
         if (longPress && keyCode in KeyEvent.KEYCODE_0..KeyEvent.KEYCODE_9) {
-            return Action.Ignore
+            return if (keyCode == KeyEvent.KEYCODE_0) Action.ToggleCase else Action.Ignore
         }
 
         // `0` and `1` are the two keys whose short press commits text outright, and a hold

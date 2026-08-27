@@ -8,6 +8,7 @@ import android.view.View
 import android.view.inputmethod.EditorInfo
 import io.github.vagrant326.atvletterwise.core.Composer
 import io.github.vagrant326.atvletterwise.core.Disambiguator
+import io.github.vagrant326.atvletterwise.core.LetterCase
 import io.github.vagrant326.atvletterwise.core.Partition
 import io.github.vagrant326.atvletterwise.model.Language
 import io.github.vagrant326.atvletterwise.model.ModelRepository
@@ -36,6 +37,13 @@ class LetterWiseImeService : InputMethodService() {
      */
     private var deferredKey = KeyEvent.KEYCODE_UNKNOWN
 
+    /**
+     * Applied where characters are written and nowhere else. The disambiguator, the model and
+     * the candidate walk all stay in lower case — `a` and `A` are the same candidate in the same
+     * position, so nothing about prediction changes.
+     */
+    private var letterCase = LetterCase.LOWER
+
     override fun onCreate() {
         super.onCreate()
         models = ModelRepository(this)
@@ -54,6 +62,10 @@ class LetterWiseImeService : InputMethodService() {
         showLanguageChooser = false
         digits = wantsDigits(info)
         deferredKey = KeyEvent.KEYCODE_UNKNOWN
+
+        // Like the digit mode, the case belongs to the field: a lock left on in one box must not
+        // follow the user into the next one.
+        letterCase = LetterCase.LOWER
         if (language !in preferences.enabledLanguages) {
             language = preferences.activeLanguage
             composer.useDisambiguator(disambiguatorFor(language), context())
@@ -152,6 +164,17 @@ class LetterWiseImeService : InputMethodService() {
 
             // Nothing happens yet. See onKeyUp.
             Action.DeferToRelease -> deferredKey = keyCode
+
+            /**
+             * The character in flight is still the composing region, so the switch applies to it
+             * as well as to what follows. Pressing the case key after seeing the wrong case is
+             * the order people actually press them in.
+             */
+            Action.ToggleCase -> {
+                // The hold has claimed the press, so the release must not also write a space.
+                deferredKey = KeyEvent.KEYCODE_UNKNOWN
+                letterCase = letterCase.next()
+            }
 
             Action.ToggleDigits -> {
                 resolvePending()
@@ -295,11 +318,18 @@ class LetterWiseImeService : InputMethodService() {
         connection.commitText(KeyBindings.PUNCTUATION[punctuationIndex].toString(), 1)
     }
 
-    /** Turns the character in flight into real text in the field. */
+    /** Turns the character in flight into real text in the field, in the case now in force. */
     private fun resolvePending() {
         val pending = composer.pending ?: return
         composer.clearPending()
-        currentInputConnection?.commitText(pending.toString(), 1)
+        currentInputConnection?.commitText(letterCase.apply(pending).toString(), 1)
+
+        // Spent by a letter reaching the field and by nothing else. The digit that now sits at
+        // the end of every group is not a letter, so walking down to it does not silently
+        // swallow a capital the user had asked for.
+        if (pending.isLetter()) {
+            letterCase = letterCase.afterLetter()
+        }
     }
 
     /**
@@ -315,13 +345,21 @@ class LetterWiseImeService : InputMethodService() {
      *
      * The character in flight is the composing text, so it comes back in this query and has
      * to be dropped: it is not resolved yet and must not be predicted from.
+     *
+     * Folded to lower case on the way out, and that is load-bearing rather than tidiness. The
+     * corpus is lowercased before training — `corpus/alphabet.py` — so the model's alphabet is
+     * 27 symbols for English and 33 for Polish with no capital among them. A `J` reaching
+     * [Disambiguator] would be a symbol the table has never seen, and the order-3 model would
+     * back off for the next three characters: every proper noun would predict badly from its
+     * own first letter onwards. Folding here also keeps the keyboard doing exactly what
+     * `Simulator` measures, which runs over the same lowercased text.
      */
     private fun context(): String {
         val connection = currentInputConnection ?: return ""
         val extra = if (composer.hasPending) 1 else 0
         val text = connection.getTextBeforeCursor(CONTEXT_LENGTH + extra, 0)?.toString()
             ?: return ""
-        return if (extra > 0) text.dropLast(1) else text
+        return (if (extra > 0) text.dropLast(1) else text).lowercase()
     }
 
     private fun disambiguatorFor(language: Language) =
@@ -335,7 +373,7 @@ class LetterWiseImeService : InputMethodService() {
             // an empty composing text unconditionally creates and clears a region on every
             // keystroke, which editors are entitled to interpret as a selection change.
             if (pending != null) {
-                connection.setComposingText(pending.toString(), 1)
+                connection.setComposingText(letterCase.apply(pending).toString(), 1)
                 composing = true
             } else if (composing) {
                 connection.setComposingText("", 1)
@@ -351,6 +389,7 @@ class LetterWiseImeService : InputMethodService() {
                 enabledLanguages = preferences.enabledLanguages,
                 trained = models.isTrained(language),
                 hintMode = preferences.hintMode,
+                letterCase = letterCase,
                 showLanguageChooser = showLanguageChooser,
                 customKeys = preferences.customKeys,
                 hasEditor = connection != null,
