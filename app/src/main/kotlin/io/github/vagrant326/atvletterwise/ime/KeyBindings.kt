@@ -7,14 +7,6 @@ sealed interface Action {
     data class Group(val key: Char) : Action
     data class Symbol(val symbol: Char) : Action
 
-    /**
-     * The digit printed on a numeric key, from holding it.
-     *
-     * @param discardsPending whether the letter in flight came from this same key's short press,
-     *   in which case the hold replaces it. Otherwise it came from an earlier key and is
-     *   committed as usual.
-     */
-    data class Digit(val digit: Char, val discardsPending: Boolean) : Action
     data object NextCandidate : Action
     data object PreviousCandidate : Action
     data object CaretLeft : Action
@@ -96,24 +88,22 @@ object KeyBindings {
             }
         }
 
-        // Held, a numeric key gives the digit printed on it. That gesture was previously going
-        // to waste on all ten - accepting the letter in flight and starting a second one from
-        // the same group, two letters from one press - except on `1`, where it opened the
-        // language list a second time. Typing a `1` matters more than a duplicate of a key the
-        // user has already assigned.
+        // Holding a numeric key used to give the digit printed on it. The digit is now the last
+        // candidate on its own key instead, one press *backwards* through a walk that wraps —
+        // which costs one press more than the hold did and buys back the only gesture on this
+        // keyboard that was still free on all ten keys. Nothing else could carry the case switch
+        // or the mark layer: the whole numeric row and the whole d-pad are already spoken for.
         //
-        // `2`-`9` discard the letter in flight, because it came from this same key's short press
-        // and the hold says it was never the point. `0` and `1` commit nothing until released,
-        // so anything in flight there came from an earlier key and is kept.
+        // Swallowed rather than allowed to fall through. On `2`-`9` a hold would otherwise arrive
+        // as a second [Action.Group] and restart the candidate list under the user's thumb.
         if (longPress && keyCode in KeyEvent.KEYCODE_0..KeyEvent.KEYCODE_9) {
-            val digit = '0' + (keyCode - KeyEvent.KEYCODE_0)
-            return Action.Digit(digit, discardsPending = digit in '2'..'9')
+            return Action.Ignore
         }
 
         // `0` and `1` are the two keys whose short press commits text outright, and a hold
         // arrives as a *second* key-down - so their character has to wait for the release or
-        // there is something to un-type. `2`-`9` only set composing text, which [Action.Digit]
-        // can drop for free, so they act on the way down and the letter appears as you type.
+        // there is something to un-type. `2`-`9` only set composing text, which a hold can
+        // replace for free, so they act on the way down and the letter appears as you type.
         if (keyCode == KeyEvent.KEYCODE_0 || keyCode == KeyEvent.KEYCODE_1) {
             return Action.DeferToRelease
         }

@@ -18,7 +18,7 @@ class ComposerTest {
 
         assertEquals('a', subject.pending)
         assertTrue(subject.hasPending)
-        assertEquals(listOf('a', 'b', 'c'), subject.alternatives)
+        assertEquals(listOf('a', 'b', 'c', '2'), subject.alternatives)
     }
 
     @Test
@@ -30,8 +30,13 @@ class ComposerTest {
         assertEquals('b', subject.pending)
         subject.previousCandidate()
         assertEquals('a', subject.pending)
+
+        // Backwards off the front reaches the digit, and that is the point of putting it last
+        // rather than an accident of where it landed: one press types `2`, which is what pays
+        // for the key's hold being free for something else.
         subject.previousCandidate()
-        assertEquals('c', subject.pending)
+        assertEquals('2', subject.pending)
+
         subject.nextCandidate()
         assertEquals('a', subject.pending)
     }
@@ -73,7 +78,7 @@ class ComposerTest {
         assertEquals('b', subject.pending)
 
         subject.pressGroup('7', context = "b")
-        assertEquals(listOf('p', 'q', 'r', 's'), subject.alternatives)
+        assertEquals(listOf('p', 'q', 'r', 's', '7'), subject.alternatives)
         assertEquals('p', subject.pending)
     }
 

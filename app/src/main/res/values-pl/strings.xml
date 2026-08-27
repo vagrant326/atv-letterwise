@@ -35,7 +35,7 @@
     <string name="settings_system_keyboard_note">Wychodzi z tej aplikacji. Tam włączasz i przełączasz aktywną klawiaturę.</string>
     <string name="settings_check_updates">Sprawdź aktualizacje</string>
     <string name="settings_updates_note">Jedyna rzecz tutaj, która korzysta z sieci. Działa w osobnym procesie, tylko po naciśnięciu, i nic nie wysyła. To, co piszesz, nigdy nie opuszcza urządzenia.</string>
-    <string name="settings_typing_note">2-9 wybierają grupę liter. 0 to spacja. 1 to interpunkcja, a kolejne naciśnięcia przechodzą po znakach. Góra i dół przechodzą po alternatywach, tak samo jak kanał w górę i w dół. Lewo i prawo przesuwają karetkę. Przytrzymanie lewo usuwa. Center zatwierdza, back zamyka.\n\nZatwierdzanie jest opcjonalne: naciśnięcie kolejnej grupy samo zatwierdza poprzednią literę.\n\nPrzytrzymanie dowolnego z 0-9 wpisuje nadrukowaną na nim cyfrę, co wystarcza na cyfrę w środku słowa. Pole, które prosi o liczby, otwiera się od razu w trybie cyfr, a klawisz powyżej przełącza ten tryb ręcznie na dłuższy ciąg.</string>
+    <string name="settings_typing_note">2-9 wybierają grupę liter. 0 to spacja. 1 to interpunkcja, a kolejne naciśnięcia przechodzą po znakach. Góra i dół przechodzą po alternatywach, tak samo jak kanał w górę i w dół. Lewo i prawo przesuwają karetkę. Przytrzymanie lewo usuwa. Center zatwierdza, back zamyka.\n\nZatwierdzanie jest opcjonalne: naciśnięcie kolejnej grupy samo zatwierdza poprzednią literę.\n\nCyfra nadrukowana na 2-9 jest ostatnią alternatywą tego klawisza, a lista zawija się w kółko, więc jedno naciśnięcie w dół ją wpisuje — tyle wystarczy na cyfrę w środku słowa. Pole, które prosi o liczby, otwiera się od razu w trybie cyfr, a klawisz powyżej przełącza ten tryb ręcznie na dłuższy ciąg.</string>
     <string name="settings_scratch_hint">Pisz tutaj</string>
     <string name="settings_scratch_note">Ustaw focus na tym polu, żeby wywołać klawiaturę. Nic tu nie jest zapisywane.</string>
 
@@ -104,7 +104,7 @@
 
     <string name="binding_digits">Klawisz cyfr</string>
     <string name="binding_digits_prompt">Naciśnij klawisz, którym chcesz przełączać litery i cyfry</string>
-    <string name="binding_digits_fallback">Opcjonalny. Przytrzymanie klawisza numerycznego i tak wpisuje nadrukowaną na nim cyfrę; osobny klawisz opłaca się dopiero na dłuższy ciąg cyfr.</string>
+    <string name="binding_digits_fallback">Opcjonalny. Jedno naciśnięcie w dół na 2-9 i tak wpisuje nadrukowaną cyfrę; osobny klawisz opłaca się dopiero na dłuższy ciąg cyfr albo na 0 i 1.</string>
     <string name="strip_no_editor">nie ma gdzie pisać — ta aplikacja nie poprosiła o wejście</string>
 
     <string name="settings_section_support">Wsparcie</string>
@@ -131,5 +131,5 @@
     <string name="strip_digits">cyfry</string>
     <string name="strip_digits_exit">cyfry — %1$s wraca do liter</string>
     <string name="strip_hint_digits">cyfry</string>
-    <string name="strip_fallback_digits">przytrzymaj 0-9</string>
+    <string name="strip_fallback_digits">dół na 2-9</string>
 </resources>
