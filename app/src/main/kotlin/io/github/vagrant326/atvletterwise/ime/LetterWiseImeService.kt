@@ -365,7 +365,7 @@ class LetterWiseImeService : InputMethodService() {
      *
      * Folded to lower case on the way out, and that is load-bearing rather than tidiness. The
      * corpus is lowercased before training — `corpus/alphabet.py` — so the model's alphabet is
-     * 27 symbols for English and 33 for Polish with no capital among them. A `J` reaching
+     * 27 symbols for English and 36 for Polish with no capital among them. A `J` reaching
      * [Disambiguator] would be a symbol the table has never seen, and the order-3 model would
      * back off for the next three characters: every proper noun would predict badly from its
      * own first letter onwards. Folding here also keeps the keyboard doing exactly what
