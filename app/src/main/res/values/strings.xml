@@ -146,5 +146,9 @@
     <string name="strip_digits">digits</string>
     <string name="strip_digits_exit">digits — %1$s for letters</string>
     <string name="strip_hint_digits">digits</string>
+    <string name="strip_hint_case">capitals</string>
+    <string name="strip_case_keys">hold 0 · once, then locked</string>
+    <string name="strip_case_once" translatable="false">Abc</string>
+    <string name="strip_case_locked" translatable="false">ABC</string>
     <string name="strip_fallback_digits">down on 2-9</string>
 </resources>
