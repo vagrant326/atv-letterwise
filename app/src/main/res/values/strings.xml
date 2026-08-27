@@ -146,6 +146,10 @@
     <string name="strip_digits">digits</string>
     <string name="strip_digits_exit">digits — %1$s for letters</string>
     <string name="strip_hint_digits">digits</string>
+    <string name="strip_digits_exit_hold">digits — hold 1 for letters</string>
+    <string name="strip_marks">marks — one, then back to letters</string>
+    <string name="strip_hint_marks">marks</string>
+    <string name="strip_marks_keys">hold 1 · marks, then digits</string>
     <string name="strip_hint_case">capitals</string>
     <string name="strip_case_keys">hold 0 · once, then locked</string>
     <string name="strip_case_once" translatable="false">Abc</string>

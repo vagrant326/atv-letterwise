@@ -8,7 +8,9 @@ import android.view.View
 import android.view.inputmethod.EditorInfo
 import io.github.vagrant326.atvletterwise.core.Composer
 import io.github.vagrant326.atvletterwise.core.Disambiguator
+import io.github.vagrant326.atvletterwise.core.Layer
 import io.github.vagrant326.atvletterwise.core.LetterCase
+import io.github.vagrant326.atvletterwise.core.UniformModel
 import io.github.vagrant326.atvletterwise.core.Partition
 import io.github.vagrant326.atvletterwise.model.Language
 import io.github.vagrant326.atvletterwise.model.ModelRepository
@@ -28,8 +30,8 @@ class LetterWiseImeService : InputMethodService() {
     private var showLanguageChooser = false
     private var composing = false
 
-    /** The numeric row types digits rather than letter groups. Per field, never remembered. */
-    private var digits = false
+    /** What the numeric row is for. Per field, never remembered. */
+    private var layer = Layer.LETTERS
 
     /**
      * A key that is down and whose character is still waiting for the release, or
@@ -60,7 +62,7 @@ class LetterWiseImeService : InputMethodService() {
         composer.clearPending()
         punctuationIndex = -1
         showLanguageChooser = false
-        digits = wantsDigits(info)
+        layer = if (wantsDigits(info)) Layer.DIGITS else Layer.LETTERS
         deferredKey = KeyEvent.KEYCODE_UNKNOWN
 
         // Like the digit mode, the case belongs to the field: a lock left on in one box must not
@@ -127,7 +129,7 @@ class LetterWiseImeService : InputMethodService() {
             return super.onKeyDown(keyCode, event)
         }
 
-        val action = KeyBindings.of(keyCode, event.repeatCount, preferences.customKeys, digits)
+        val action = KeyBindings.of(keyCode, event.repeatCount, preferences.customKeys, layer)
             ?: return super.onKeyDown(keyCode, event)
 
         if (action == Action.Ignore) {
@@ -176,9 +178,15 @@ class LetterWiseImeService : InputMethodService() {
                 letterCase = letterCase.next()
             }
 
-            Action.ToggleDigits -> {
-                resolvePending()
-                digits = !digits
+            // The assigned key is still a straight in-and-out of the digit layer. Someone who
+            // bound a button for digits wants digits, not a tour of the marks on the way.
+            Action.ToggleDigits ->
+                useLayer(if (layer == Layer.DIGITS) Layer.LETTERS else Layer.DIGITS)
+
+            Action.NextLayer -> {
+                // The hold has claimed the press, so the release must not also cycle a mark.
+                deferredKey = KeyEvent.KEYCODE_UNKNOWN
+                useLayer(layer.next())
             }
 
             Action.NextLanguage -> stepLanguage(1)
@@ -330,6 +338,15 @@ class LetterWiseImeService : InputMethodService() {
         if (pending.isLetter()) {
             letterCase = letterCase.afterLetter()
         }
+
+        // One mark and back to letters, the same bargain the one-off capital makes. An address
+        // wants `@` once and a password wants `!` once, so a sticky layer would cost a press on
+        // the common case and leave a mode behind that the remote cannot show. A run of marks is
+        // what holding `1` twice is for.
+        if (layer == Layer.SYMBOLS) {
+            layer = Layer.LETTERS
+            composer.useDisambiguator(disambiguatorFor(language), context())
+        }
     }
 
     /**
@@ -365,6 +382,27 @@ class LetterWiseImeService : InputMethodService() {
     private fun disambiguatorFor(language: Language) =
         Disambiguator(language.partition, models.modelFor(language))
 
+    /**
+     * Moves to [next], finishing whatever was in flight and swapping the partition under the
+     * candidate walk.
+     *
+     * Resolving first is not optional: the character in flight is a position in a group, and a
+     * position that outlived the group changing would come back as a different character than
+     * the one the field is showing.
+     *
+     * [Layer.DIGITS] does not touch the composer at all — nothing there is ambiguous, so the
+     * keys commit outright and there is no group to disambiguate. The letters disambiguator is
+     * left loaded underneath it, ready for the way out.
+     */
+    private fun useLayer(next: Layer) {
+        resolvePending()
+        layer = next
+        composer.useDisambiguator(
+            if (next == Layer.SYMBOLS) MARK_DISAMBIGUATOR else disambiguatorFor(language),
+            context(),
+        )
+    }
+
     private fun render() {
         val connection = currentInputConnection
         val pending = composer.pending
@@ -393,7 +431,7 @@ class LetterWiseImeService : InputMethodService() {
                 showLanguageChooser = showLanguageChooser,
                 customKeys = preferences.customKeys,
                 hasEditor = connection != null,
-                digits = digits,
+                layer = layer,
             )
         )
     }
@@ -410,6 +448,19 @@ class LetterWiseImeService : InputMethodService() {
     }
 
     private companion object {
+        /**
+         * The mark layer, built once: it has no language and nothing to train.
+         *
+         * [UniformModel] scores every candidate equally, so the walk falls through to the order
+         * written into [Partition.MARKS] — commonest first within each group. That is a choice
+         * that can be defended, where a ranking would be one invented from a corpus that records
+         * nothing about how often anybody types a brace.
+         *
+         * `offersDigit = false` because digits are their own layer. Offering them here as well
+         * would put the same character in two places.
+         */
+        val MARK_DISAMBIGUATOR = Disambiguator(Partition.MARKS, UniformModel, offersDigit = false)
+
         /** Enough for an order-5 model; the table in use needs two. */
         const val CONTEXT_LENGTH = 4
 

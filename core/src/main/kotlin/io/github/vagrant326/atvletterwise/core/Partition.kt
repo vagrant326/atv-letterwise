@@ -77,5 +77,37 @@ class Partition(val groups: Map<Char, String>) {
                 '9' to "wxyzźż",
             )
         )
+
+        /**
+         * Every printable mark on a QWERTY keyboard, four to a key, for [Layer.SYMBOLS].
+         *
+         * All thirty-two rather than the twenty-five the `1` cycle leaves out, so there is one
+         * rule to learn: this layer is the whole set and `1` is a shortcut to the seven a
+         * television query uses. A layer holding "the leftovers" would be a list nobody could
+         * predict the contents of.
+         *
+         * Grouped by kind, and the grouping is the feature. Nothing is printed on the remote, so
+         * the legend on screen is the only place these can be found, and a reader scanning eight
+         * cells for a bracket does better with brackets kept together than with any frequency
+         * order. Within a group the commonest goes first, so `@`, `!`, `-` and `.` — the marks an
+         * address or a password actually needs — are the candidate already in flight.
+         *
+         * Paired with [UniformModel] rather than a trained one. No corpus here records how often
+         * somebody types a brace, and a model that ranked these would be ranking them from a
+         * number that had been made up; scoring them all equally makes the walk fall through to
+         * this order, which is chosen and can be defended.
+         */
+        val MARKS = Partition(
+            mapOf(
+                '2' to ".,;:",
+                '3' to "!?'\"",
+                '4' to "@#/\\",
+                '5' to "$%&*",
+                '6' to "()<>",
+                '7' to "[]{}",
+                '8' to "-_+=",
+                '9' to "`~^|",
+            )
+        )
     }
 }
