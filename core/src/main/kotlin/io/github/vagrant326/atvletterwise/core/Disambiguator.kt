@@ -3,6 +3,15 @@ package io.github.vagrant326.atvletterwise.core
 class Disambiguator(
     private val partition: Partition,
     private val model: NgramModel,
+    /**
+     * Whether the digit printed on a key is offered as its last candidate.
+     *
+     * True for the letter partitions, where it is the only route to a digit on a remote with no
+     * digit button assigned. False for [Partition.MARKS]: digits are their own layer, and
+     * offering them here as well would put the same character in two places and turn the symbol
+     * legend into a list of two unrelated kinds.
+     */
+    private val offersDigit: Boolean = true,
 ) {
 
     /**
@@ -25,9 +34,10 @@ class Disambiguator(
         if (symbols.isEmpty()) {
             return emptyList()
         }
-        return symbols.toList().sortedWith(
+        val ranked = symbols.toList().sortedWith(
             compareByDescending<Char> { model.score(context, it) }
                 .thenBy { symbols.indexOf(it) }
-        ) + key
+        )
+        return if (offersDigit) ranked + key else ranked
     }
 }

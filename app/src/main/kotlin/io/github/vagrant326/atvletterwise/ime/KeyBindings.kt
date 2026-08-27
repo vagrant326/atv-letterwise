@@ -1,6 +1,7 @@
 package io.github.vagrant326.atvletterwise.ime
 
 import android.view.KeyEvent
+import io.github.vagrant326.atvletterwise.core.Layer
 import io.github.vagrant326.atvletterwise.core.Simulator
 
 sealed interface Action {
@@ -26,6 +27,20 @@ sealed interface Action {
      * when the digit moved to being the last candidate on its own key.
      */
     data object ToggleCase : Action
+
+    /**
+     * Letters → marks → digits → letters, from holding `1`.
+     *
+     * `1` because its short press is already the punctuation cycle, so the hold is more of what
+     * the tap does rather than an unrelated function parked on a spare button — and there is no
+     * spare button. One gesture for all three because the alternative is two, and the second one
+     * does not exist.
+     *
+     * This is also the only way into the digit layer that needs no assigned key, which is what
+     * makes `0` and `1` typable at all: they are space and punctuation on their own keys, so
+     * unlike `2`-`9` they have no candidate list to hide a digit at the end of.
+     */
+    data object NextLayer : Action
 
     /**
      * A key went down whose meaning is not settled yet: released it is a character, held it is
@@ -68,9 +83,10 @@ object KeyBindings {
      * @param repeatCount straight from the [KeyEvent]. A held key repeats every few hundred
      *   milliseconds, so acting on every repeat turns one long press into a spin. Only
      *   `repeatCount == 1` is a long press; later repeats are swallowed.
-     * @param digits whether the numeric row is currently typing digits instead of letters.
+     * @param layer what the numeric row is currently for.
      */
-    fun of(keyCode: Int, repeatCount: Int, custom: CustomKeys, digits: Boolean): Action? {
+    fun of(keyCode: Int, repeatCount: Int, custom: CustomKeys, layer: Layer): Action? {
+        val digits = layer == Layer.DIGITS
         if (repeatCount > 1) {
             return Action.Ignore
         }
@@ -87,8 +103,27 @@ object KeyBindings {
             return Action.ToggleDigits
         }
 
-        // In digit mode the row is only digits, so holding a key means nothing extra. Swallowed
-        // rather than repeated: every other key here does one thing per press.
+        // Holding a numeric key used to give the digit printed on it. The digit is now the last
+        // candidate on its own key instead, one press *backwards* through a walk that wraps —
+        // which costs one press more than the hold did and buys back the only gesture on this
+        // keyboard that was still free on all ten keys. Nothing else could carry the case switch
+        // or the layer switch: the whole numeric row and the whole d-pad are already spoken for.
+        //
+        // Ahead of the digit-layer branch below, and that ordering is load-bearing: holding `1`
+        // is how the user leaves the digit layer, so a branch that swallowed it first would let
+        // them in and never out.
+        if (longPress && (keyCode == KeyEvent.KEYCODE_0 || keyCode == KeyEvent.KEYCODE_1)) {
+            return when {
+                keyCode == KeyEvent.KEYCODE_1 -> Action.NextLayer
+                // Nothing to capitalise among digits, and a gesture that silently does nothing
+                // is worse than one that is not there.
+                digits -> Action.Ignore
+                else -> Action.ToggleCase
+            }
+        }
+
+        // In the digit layer the row is only digits, so holding a key means nothing extra.
+        // Swallowed rather than repeated: every other key here does one thing per press.
         if (digits && keyCode in KeyEvent.KEYCODE_0..KeyEvent.KEYCODE_9) {
             return if (longPress) {
                 Action.Ignore
@@ -97,16 +132,10 @@ object KeyBindings {
             }
         }
 
-        // Holding a numeric key used to give the digit printed on it. The digit is now the last
-        // candidate on its own key instead, one press *backwards* through a walk that wraps —
-        // which costs one press more than the hold did and buys back the only gesture on this
-        // keyboard that was still free on all ten keys. Nothing else could carry the case switch
-        // or the mark layer: the whole numeric row and the whole d-pad are already spoken for.
-        //
         // Swallowed rather than allowed to fall through. On `2`-`9` a hold would otherwise arrive
         // as a second [Action.Group] and restart the candidate list under the user's thumb.
-        if (longPress && keyCode in KeyEvent.KEYCODE_0..KeyEvent.KEYCODE_9) {
-            return if (keyCode == KeyEvent.KEYCODE_0) Action.ToggleCase else Action.Ignore
+        if (longPress && keyCode in KeyEvent.KEYCODE_2..KeyEvent.KEYCODE_9) {
+            return Action.Ignore
         }
 
         // `0` and `1` are the two keys whose short press commits text outright, and a hold

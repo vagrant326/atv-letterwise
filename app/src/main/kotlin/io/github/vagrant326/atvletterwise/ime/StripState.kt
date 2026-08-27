@@ -1,6 +1,7 @@
 package io.github.vagrant326.atvletterwise.ime
 
 import io.github.vagrant326.atvletterwise.core.Composer
+import io.github.vagrant326.atvletterwise.core.Layer
 import io.github.vagrant326.atvletterwise.core.LetterCase
 import io.github.vagrant326.atvletterwise.core.Partition
 import io.github.vagrant326.atvletterwise.model.Language
@@ -24,8 +25,19 @@ data class StripState(
      */
     val hasEditor: Boolean,
     /**
-     * Whether the numeric row is typing digits. The letter legend is hidden while it is, because
+     * What the numeric row is for. The letter legend is hidden in the digit layer, because
      * a legend that promises `abc` on a key now producing `2` is worse than no legend at all.
      */
-    val digits: Boolean,
-)
+    val layer: Layer,
+) {
+    /**
+     * Which partition the keypad legend should spell out, or null in the digit layer where every
+     * key is simply the digit printed on it and the legend has nothing to add.
+     */
+    val legend: Partition?
+        get() = when (layer) {
+            Layer.LETTERS -> partition
+            Layer.SYMBOLS -> Partition.MARKS
+            Layer.DIGITS -> null
+        }
+}

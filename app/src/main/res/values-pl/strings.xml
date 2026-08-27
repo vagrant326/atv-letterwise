@@ -131,6 +131,10 @@
     <string name="strip_digits">cyfry</string>
     <string name="strip_digits_exit">cyfry — %1$s wraca do liter</string>
     <string name="strip_hint_digits">cyfry</string>
+    <string name="strip_digits_exit_hold">cyfry — przytrzymaj 1, wracasz do liter</string>
+    <string name="strip_marks">znaki — jeden, potem z powrotem litery</string>
+    <string name="strip_hint_marks">znaki</string>
+    <string name="strip_marks_keys">przytrzymaj 1 · znaki, potem cyfry</string>
     <string name="strip_hint_case">wielkie</string>
     <string name="strip_case_keys">przytrzymaj 0 · raz, potem na stałe</string>
     <string name="strip_fallback_digits">dół na 2-9</string>

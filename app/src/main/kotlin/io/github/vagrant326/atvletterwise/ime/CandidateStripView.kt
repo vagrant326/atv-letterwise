@@ -15,6 +15,7 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
 import io.github.vagrant326.atvletterwise.R
+import io.github.vagrant326.atvletterwise.core.Layer
 import io.github.vagrant326.atvletterwise.core.LetterCase
 import io.github.vagrant326.atvletterwise.core.Partition
 import io.github.vagrant326.atvletterwise.model.Language
@@ -59,7 +60,11 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
      * carries nine more letters on the same eight keys, so the grid is wrong rather than merely
      * stale after a switch.
      */
-    private var keypadLanguage: Language? = null
+    /**
+     * The partition the legend was last built from, so it is rebuilt when the keys change what
+     * they carry. Tracking the language was enough while letters were the only thing on them.
+     */
+    private var keypadLegend: Partition? = null
 
     private val languageValue = hintValue()
     private val deleteValue = hintValue()
@@ -101,6 +106,9 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
         addView(hintLine(context.getString(R.string.strip_hint_case), hintValue().apply {
             text = context.getString(R.string.strip_case_keys)
         }))
+        addView(hintLine(context.getString(R.string.strip_hint_marks), hintValue().apply {
+            text = context.getString(R.string.strip_marks_keys)
+        }))
     }
 
     /**
@@ -127,20 +135,21 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
     fun update(state: StripState) {
         candidateRow.text = candidateRow(state)
 
-        if (keypadLanguage != state.language) {
+        val legend = state.legend
+        if (legend != null && keypadLegend !== legend) {
             keypad.removeAllViews()
             keypadCells.clear()
-            buildKeypad(state.partition)
-            keypadLanguage = state.language
+            buildKeypad(legend)
+            keypadLegend = legend
         }
-        val keypadVisible = state.hintMode == HintMode.KEYPAD && !state.digits
+        val keypadVisible = state.hintMode == HintMode.KEYPAD && legend != null
         hintRow.visibility = if (keypadVisible) VISIBLE else GONE
         inlineHint.visibility =
-            if (state.hintMode == HintMode.INLINE && !state.digits) VISIBLE else GONE
+            if (state.hintMode == HintMode.INLINE && legend != null) VISIBLE else GONE
 
-        if (inlineHint.visibility == VISIBLE) {
+        if (inlineHint.visibility == VISIBLE && legend != null) {
             val space = context.getString(R.string.strip_space)
-            inlineHint.text = state.partition.groups.entries
+            inlineHint.text = legend.groups.entries
                 .sortedBy { it.key }
                 .joinToString("   ") { "${it.key}:${it.value}" } + "   0:$space"
         }
@@ -161,7 +170,7 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
 
         // Highlight the group the current alternatives came from, so the keypad reads as
         // part of what is happening rather than as a static wall of text.
-        val active = state.composer.alternatives.firstOrNull()?.let { state.partition.keyFor(it) }
+        val active = state.composer.alternatives.firstOrNull()?.let { legend?.keyFor(it) }
         for ((key, cell) in keypadCells) {
             cell.setTextColor(if (key == active) ACCENT else DIM)
         }
@@ -234,12 +243,12 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
         // Digits are deterministic, so there are no alternatives to walk and the row is free to
         // carry the one thing the user cannot see otherwise: which mode they are in, and the
         // way back out of it.
-        if (state.digits) {
-            // Named the way out only when there is one. A numeric field switches the mode on its
-            // own, and promising a button the user never assigned would be worse than silence.
+        if (state.layer == Layer.DIGITS) {
+            // The way out is always nameable now: holding `1` cycles on to letters whether or not
+            // a button was ever assigned, so this no longer has to stay silent about the exit.
             val key = state.customKeys.digits
             val label = if (key == KeyBindings.NO_KEY) {
-                context.getString(R.string.strip_digits)
+                context.getString(R.string.strip_digits_exit_hold)
             } else {
                 context.getString(
                     R.string.strip_digits_exit,
@@ -263,10 +272,18 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
         }
         // Named as well as drawn into the candidates, so the state survives a row with nothing
         // in flight — which is exactly when the user is deciding whether to press the key again.
-        val tag = when (state.letterCase) {
-            LetterCase.LOWER -> languageTag
-            LetterCase.ONCE -> "$languageTag ${context.getString(R.string.strip_case_once)}"
-            LetterCase.LOCKED -> "$languageTag ${context.getString(R.string.strip_case_locked)}"
+        val caseTag = when (state.letterCase) {
+            LetterCase.LOWER -> ""
+            LetterCase.ONCE -> " " + context.getString(R.string.strip_case_once)
+            LetterCase.LOCKED -> " " + context.getString(R.string.strip_case_locked)
+        }
+        // The mark layer replaces the language tag rather than sitting beside it: no language is
+        // in force while the keys carry marks, so naming one would be a lie about what a press
+        // is going to do.
+        val tag = if (state.layer == Layer.SYMBOLS) {
+            context.getString(R.string.strip_marks)
+        } else {
+            languageTag + caseTag
         }
         val text = SpannableStringBuilder(tag).append("   ")
         text.setSpan(ForegroundColorSpan(DIM), 0, text.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
