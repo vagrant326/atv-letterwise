@@ -146,16 +146,6 @@ class LetterWiseImeService : InputMethodService() {
                 currentInputConnection?.commitText(action.symbol.toString(), 1)
             }
 
-            // The hold has claimed the press, so the release must not also fire.
-            is Action.Digit -> {
-                deferredKey = KeyEvent.KEYCODE_UNKNOWN
-                if (action.discardsPending) {
-                    composer.clearPending()
-                } else {
-                    resolvePending()
-                }
-                currentInputConnection?.commitText(action.digit.toString(), 1)
-            }
 
             Action.NextCandidate -> composer.nextCandidate()
             Action.PreviousCandidate -> composer.previousCandidate()

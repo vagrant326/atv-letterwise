@@ -49,7 +49,7 @@
     <string name="settings_system_keyboard_note">Leaves this app. Enable or switch the active keyboard there.</string>
     <string name="settings_check_updates">Check for updates</string>
     <string name="settings_updates_note">The only thing here that uses the network. It runs in a separate process, only when you press it, and sends nothing. What you type never leaves the device.</string>
-    <string name="settings_typing_note">2-9 pick a letter group. 0 is space. 1 is punctuation, and pressing it again cycles the marks. Up and down walk the alternatives, and so do channel up and down. Left and right move the caret. Holding left deletes. Centre submits, back closes.\n\nAccept is optional: pressing the next group key accepts the previous letter on its own.\n\nHolding any of 0-9 types the digit printed on it, which is enough for a digit inside a word. A field that asks for numbers opens in digit mode instead, and the button above switches that mode by hand for a longer run.</string>
+    <string name="settings_typing_note">2-9 pick a letter group. 0 is space. 1 is punctuation, and pressing it again cycles the marks. Up and down walk the alternatives, and so do channel up and down. Left and right move the caret. Holding left deletes. Centre submits, back closes.\n\nAccept is optional: pressing the next group key accepts the previous letter on its own.\n\nThe digit printed on 2-9 is the last alternative on that key, and the walk wraps, so one press of down types it — enough for a digit inside a word. A field that asks for numbers opens in digit mode instead, and the button above switches that mode by hand for a longer run.</string>
     <string name="settings_scratch_hint">Type here</string>
     <string name="settings_scratch_note">Focus this field to bring the keyboard up. Nothing here is saved.</string>
 
@@ -118,7 +118,7 @@
 
     <string name="binding_digits">Digits button</string>
     <string name="binding_digits_prompt">Press the button you want for switching between letters and digits</string>
-    <string name="binding_digits_fallback">Optional. Holding a number key already types the digit printed on it; a button here is only worth it for typing a run of them.</string>
+    <string name="binding_digits_fallback">Optional. One press of down on 2-9 already types the digit printed on it; a button here is only worth it for typing a run of them, or for 0 and 1.</string>
     <string name="strip_no_editor">nowhere to type — this app never asked for input</string>
 
     <string name="settings_section_support">Support</string>
@@ -146,5 +146,5 @@
     <string name="strip_digits">digits</string>
     <string name="strip_digits_exit">digits — %1$s for letters</string>
     <string name="strip_hint_digits">digits</string>
-    <string name="strip_fallback_digits">hold 0-9</string>
+    <string name="strip_fallback_digits">down on 2-9</string>
 </resources>
