@@ -8,7 +8,13 @@ all cost roughly **10 keystrokes per character**, because every letter means tra
 the cursor there and confirming. This types one press per letter and lets a character
 trigram model work out which letter you meant.
 
-**Status: working on a real TV.** `0.1.0` is the first release with the key mapping settled.
+**Status: working on a real TV**, Netflix and YouTube search included. The key mapping is settled,
+and between the case switch and the mark layer there is no printable character it cannot reach —
+passwords included.
+
+**To install it:** AFTVnews Downloader code **8662742**, or **8946007** for the dev channel. Seven
+digits on the remote beats typing a URL with a grid keyboard, which is the problem this project
+exists to solve. [Details and direct links below.](#installing)
 
 **Netflix and YouTube need one thing set up.** They never focus a text field, so nothing
 raises the keyboard for you there. Assign a **trigger button** (Settings → Buttons) and press
@@ -39,7 +45,8 @@ case — it is designed for four keys from the start.
 | `2`–`9` | Select letter group, phone-keypad layout |
 | `0` | Space |
 | `1` | Punctuation; press again to cycle the marks |
-| **Hold `0`–`9`** | The digit printed on the key |
+| **Hold `0`** | Capitals: `abc` → `Abc` → `ABC`. The one-off spends itself on the letter it capitalises |
+| **Hold `1`** | The next layer: letters → marks → digits → letters |
 | `DPAD_UP` / `DOWN`, `CH+` / `CH−` | Walk the candidate letters for the current position |
 | `DPAD_LEFT` / `RIGHT` | Move the caret — moving right also accepts the character in flight |
 | **Hold `DPAD_LEFT`** | Delete |
@@ -54,16 +61,42 @@ Both Polish and English are supported, as two trigram tables rather than two
 dictionaries. Anything is typable: proper nouns, film titles, invented words, passwords.
 A word the model has never seen costs extra presses, never a dead end.
 
+### Capitals and marks
+
+Holding `0` cycles `abc` → `Abc` → `ABC`. The one-off comes first because isolated capitals —
+sentence openings, proper nouns — outnumber runs of them by a wide margin in both alphabets
+here, and it spends itself on the letter it capitalised, so there is no mode to be left in by
+accident.
+
+Holding `1` moves to the next layer, and there are three: letters, marks, digits. The mark layer
+carries **every printable mark a QWERTY keyboard has**, all thirty-two rather than the ones key
+`1` leaves out, grouped across `2`–`9` and picked with the same walk the letters use — so nothing
+new has to be learnt to reach one. It is spent by a single mark, because a password wants one `!`
+and an address one `@`.
+
+Both gestures hang off the two keys whose short press commits outright and therefore already
+waits for the release, so neither costs anything that was not deferred already. `1` carries the
+layer cycle because its tap is the punctuation cycle: the hold is more of what the tap does,
+rather than an unrelated function parked on a spare key. There is no spare key.
+
 ### Digits
 
-Holding any number key types the digit printed on it, which covers a digit inside a word.
-A field that declares itself numeric — a PIN box, a phone number — opens in digit mode
-instead, where the whole row is digits and nothing has to be held.
+The digit printed on a key is its **last candidate**. Press the group key and walk past the
+letters — the walk wraps, so one press backwards reaches the digit from the top of the list. It
+sits after every letter deliberately: no trigram model will ever predict a digit, because a digit
+is what you want precisely when the letters are wrong, and a trained model must not be able to
+promote one above a letter by accident. Letters keep the ranks they had, so the published KSPC is
+unchanged.
 
-Plenty of fields that hold digits still declare themselves plain text, the Downloader code
-box among them, so the mode can also be switched by hand. That needs a button, which is
-optional on purpose: holding a key is enough for one digit, and on a TV digits are rare
-enough that whether a run of them deserves a dedicated button is your call.
+A field that declares itself numeric — a PIN box, a phone number — opens in digit mode instead,
+where the whole row is digits and there is nothing to disambiguate. Plenty of fields that hold
+digits still declare themselves plain text, the Downloader code box among them, so that layer is
+also two holds of `1` away, or one press of a button if you assign one. It is sticky where the
+mark layer is not: a PIN is a run, one `!` is not.
+
+Holding `1` is also the only route to the digits `0` and `1` themselves. They are space and
+punctuation on their own keys, so unlike `2`–`9` they have no candidate list to hide a digit at
+the end of.
 
 ### Buttons you assign yourself
 
@@ -76,7 +109,7 @@ Settings → Buttons, and the app records whatever it reports.
 |---|---|
 | Language | **Required.** The language otherwise only changes by ticking a different one in settings |
 | Delete | Holding `DPAD_LEFT` deletes |
-| Digits | Holding a number key still gives its digit |
+| Digits | Holding `1` twice reaches the layer, and a single digit is the last candidate on its own key |
 | Trigger | **Needed for Netflix and YouTube.** Nothing raises the keyboard where no field asked for it |
 
 The trigger button raises the keyboard over an app that never requested input, which is what
