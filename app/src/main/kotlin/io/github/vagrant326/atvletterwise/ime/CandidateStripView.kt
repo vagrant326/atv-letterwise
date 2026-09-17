@@ -394,11 +394,11 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
             // letters themselves.
             includeFontPadding = false
             setLineSpacing(0f, 0.95f)
-            setPadding(dp(6), dp(2), dp(6), dp(2))
+            setPadding(dp(6), dp(4), dp(6), dp(4))
             layoutParams = LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
                 marginStart = dp(2)
                 marginEnd = dp(2)
-                topMargin = dp(1)
+                topMargin = dp(3)
             }
             if (key != ' ') {
                 setBackgroundColor(CELL)
