@@ -83,9 +83,14 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
         hintValue().apply { text = context.getString(R.string.strip_case_keys) },
     )
 
-    private val marksLine = hintLine(
-        context.getString(R.string.strip_hint_marks),
-        hintValue().apply { text = context.getString(R.string.strip_marks_keys) },
+    /**
+     * Names the whole ring rather than the next step in it, which is what makes it the one line
+     * that stays true in every layer: holding `1` in the marks layer reaches digits, not the
+     * letters a "back to letters" line would have promised.
+     */
+    private val layerLine = hintLine(
+        context.getString(R.string.strip_hint_layers),
+        hintValue().apply { text = context.getString(R.string.strip_layer_keys) },
     )
 
     /**
@@ -122,7 +127,7 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
         // digit and its letters.
         addView(digitsLine)
         addView(caseLine)
-        addView(marksLine)
+        addView(layerLine)
     }
 
     /**
@@ -140,7 +145,10 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
     init {
         orientation = VERTICAL
         setBackgroundColor(BACKGROUND)
-        setPadding(dp(12), dp(8), dp(12), dp(8))
+        // The bottom edge is the one a TV eats. A set that overscans cuts the outer few percent
+        // of the panel, and the `0` row sits exactly there — so the strip keeps a margin the
+        // screen is allowed to swallow instead of putting the last row in it.
+        setPadding(dp(12), dp(8), dp(12), dp(28))
         addView(candidateRow)
         addView(inlineHint)
         addView(hintRow)
@@ -160,13 +168,19 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
         val keypadVisible = state.hintMode == HintMode.KEYPAD
         hintRow.visibility = if (keypadVisible) VISIBLE else GONE
 
-        // The digit layer answers each of these with something else: capitals do nothing among
-        // digits, holding `1` leads back to letters rather than on to marks, and the digits are
-        // already under the keys. Dropped rather than left to say something untrue.
-        val letters = state.layer != Layer.DIGITS
-        digitsLine.visibility = if (letters) VISIBLE else GONE
-        caseLine.visibility = if (letters) VISIBLE else GONE
-        marksLine.visibility = if (letters) VISIBLE else GONE
+        // Each line is shown where it is true and dropped where it is not. There is nothing to
+        // capitalise among digits, so that one goes; the layer line names the whole ring and
+        // therefore stays.
+        caseLine.visibility = if (state.layer == Layer.DIGITS) GONE else VISIBLE
+        digitsLine.visibility = when (state.layer) {
+            Layer.LETTERS -> VISIBLE
+            // No digit sits at the end of a mark group — they are a layer of their own here —
+            // so there is nothing to name unless a key was assigned to reach it.
+            Layer.SYMBOLS ->
+                if (state.customKeys.digits == KeyBindings.NO_KEY) GONE else VISIBLE
+            // Already under every key.
+            Layer.DIGITS -> GONE
+        }
         inlineHint.visibility =
             if (state.hintMode == HintMode.INLINE && legend != null) VISIBLE else GONE
 
