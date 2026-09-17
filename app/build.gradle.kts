@@ -32,9 +32,6 @@ android {
     productFlavors {
         create("prod") {
             dimension = "channel"
-            // Guards the strip's layout readout, which exists to answer one question from the
-            // sofa and must never reach the released keyboard. See docs/no-research-apparatus.
-            buildConfigField("boolean", "DEV_CHANNEL", "false")
             buildConfigField("String", "RELEASE_TAG_PREFIX", "\"v\"")
             buildConfigField("String", "RELEASE_ALIAS", "\"latest\"")
             buildConfigField("String", "RELEASE_ASSET", "\"atv-letterwise.apk\"")
@@ -42,7 +39,6 @@ android {
         create("dev") {
             dimension = "channel"
             applicationIdSuffix = ".dev"
-            buildConfigField("boolean", "DEV_CHANNEL", "true")
             buildConfigField("String", "RELEASE_TAG_PREFIX", "\"dev-\"")
             buildConfigField("String", "RELEASE_ALIAS", "\"latest-dev\"")
             buildConfigField("String", "RELEASE_ASSET", "\"atv-letterwise-dev.apk\"")
