@@ -141,10 +141,8 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
     init {
         orientation = VERTICAL
         setBackgroundColor(BACKGROUND)
-        // The padding under the grid is inside the height budget, not below it — the strip draws
-        // it while the `0` row above it is being squeezed — so it is six dp taken straight off
-        // the one row that has none to spare.
         setPadding(dp(12), dp(5), dp(12), dp(2))
+        buildKeypad()
         addView(candidateRow)
         addView(inlineHint)
         addView(hintRow)
@@ -155,9 +153,14 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
 
         val legend = state.legend
         if (keypadLegend !== legend || keypadLayer != state.layer) {
-            keypad.removeAllViews()
-            keypadCells.clear()
-            buildKeypad(legend)
+            // Only the text changes. The grid itself is built once and never taken apart again:
+            // rebuilding it here meant the strip asked to be laid out from inside the pass that
+            // sizes the keyboard's window, and a window sized from the measurement before the
+            // rows arrived is a window one row too short — which is the row the `0` sits in.
+            // T9 draws the same grid and has never lost it, and this is the difference.
+            for ((key, cell) in keypadCells) {
+                cell.text = cellText(key, legend)
+            }
             keypadLegend = legend
             keypadLayer = state.layer
         }
@@ -350,48 +353,55 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
      * The physical numpad: 123 / 456 / 789 / 0. No `*` or `#` row — this is not a phone and
      * those keys are not on every remote, so drawing them promises buttons that may not exist.
      *
-     * A null [partition] is the digit layer: the grid is drawn with the digits alone.
+     * Built once, in the constructor, and only ever re-lettered afterwards.
      */
-    private fun buildKeypad(partition: Partition?) {
+    private fun buildKeypad() {
         for (row in listOf("123", "456", "789", " 0 ")) {
             val line = LinearLayout(context).apply {
                 orientation = HORIZONTAL
                 layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT)
             }
             for (key in row) {
-                line.addView(cell(key, partition))
+                line.addView(cell(key))
             }
             keypad.addView(line)
         }
     }
 
-    private fun cell(key: Char, partition: Partition?): TextView {
+    /**
+     * What one cell says. Always two lines, whichever layer is on, so re-lettering the grid can
+     * never change its height.
+     *
+     * A null [legend] is the digit layer: `0` is a zero rather than a space and `1` is a one
+     * rather than the punctuation cycle, so every key carries the digit and nothing else.
+     */
+    private fun cellText(key: Char, legend: Partition?): String {
+        if (key == ' ') {
+            return ""
+        }
         val letters = when {
-            key == ' ' -> ""
-            // The digit layer: `0` is a zero rather than a space and `1` is a one rather than
-            // the punctuation cycle, so every key carries the digit printed on it and nothing else.
-            partition == null -> ""
+            legend == null -> ""
             key == '0' -> context.getString(R.string.strip_space)
             key == '1' -> ".,-"
-            else -> partition.symbolsFor(key)
+            else -> legend.symbolsFor(key)
         }
+        return "$key\n$letters"
+    }
+
+    private fun cell(key: Char): TextView {
         return TextView(context).apply {
-            text = if (key == ' ') "" else "$key\n$letters"
+            text = cellText(key, legend = null)
             setTextColor(DIM)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
             gravity = Gravity.CENTER
-            // Exactly two lines in every cell, whatever it carries: an empty second line in the
-            // digit layer, and a group of letters that can never wrap onto a third. That keeps
-            // the four rows the same height — a row that grew by a line would push the `0` row
-            // one line further down, and down is where the strip runs out of window.
+            // Two lines, never one and never three, whatever the cell is re-lettered with. The
+            // grid's height is then fixed for the life of the view, so nothing it says can make
+            // the strip ask to be measured again.
             minLines = 2
             maxLines = 2
-            // The keyboard is given a height budget and the grid is what overruns it, so a dp
-            // saved in a cell is four dp the `0` row gets back. This is the one place to take it
-            // from: the font's own padding is space reserved above the ascent and below the
-            // descent, so dropping it costs no part of a glyph — an ogonek sits inside the
-            // descent, not in the padding. Compressing the line spacing instead ate into the
-            // letters themselves.
+            // The font's own padding is space reserved above the ascent and below the descent,
+            // so dropping it shortens the grid without costing any part of a glyph — an ogonek
+            // sits inside the descent, not in the padding.
             includeFontPadding = false
             setLineSpacing(0f, 0.95f)
             setPadding(dp(6), dp(4), dp(6), dp(4))
