@@ -14,6 +14,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
+import io.github.vagrant326.atvletterwise.BuildConfig
 import io.github.vagrant326.atvletterwise.R
 import io.github.vagrant326.atvletterwise.core.Layer
 import io.github.vagrant326.atvletterwise.core.LetterCase
@@ -40,6 +41,23 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
         isSingleLine = true
         ellipsize = TextUtils.TruncateAt.END
     }
+
+    /**
+     * What the layout actually came out as, printed where it can be read from the sofa. The TV
+     * has no console and never will, so the alternative to this is guessing from a photograph —
+     * which has now cost several releases over one clipped row.
+     *
+     * Dev channel only, and it comes out the moment the question is answered.
+     */
+    private val layoutReadout = TextView(context).apply {
+        setTextColor(WARNING)
+        setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
+        isSingleLine = true
+        visibility = if (BuildConfig.DEV_CHANNEL) VISIBLE else GONE
+    }
+
+    private var heightSpec = 0
+    private var reported = ""
 
     private val inlineHint = TextView(context).apply {
         setTextColor(DIM)
@@ -143,10 +161,47 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
         setBackgroundColor(BACKGROUND)
         setPadding(dp(12), dp(5), dp(12), dp(2))
         buildKeypad()
+        // First, so that the one thing being measured is never the thing that gets cut off.
+        addView(layoutReadout)
         addView(candidateRow)
         addView(inlineHint)
         addView(hintRow)
     }
+
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        heightSpec = heightMeasureSpec
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec)
+    }
+
+    /**
+     * Six numbers, and between them they say which of the three candidate explanations is the
+     * real one: a window that refuses the height (`ma` below `chce`), a strip hanging below the
+     * panel (`y` plus `ma` past `ekran`), or a set eating its own edge (everything consistent and
+     * the row still missing).
+     */
+    override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
+        super.onLayout(changed, left, top, right, bottom)
+        if (!BuildConfig.DEV_CHANNEL) {
+            return
+        }
+        val limit = when (MeasureSpec.getMode(heightSpec)) {
+            MeasureSpec.EXACTLY -> "=" + asDp(MeasureSpec.getSize(heightSpec))
+            MeasureSpec.AT_MOST -> "<" + asDp(MeasureSpec.getSize(heightSpec))
+            else -> "bez"
+        }
+        val onScreen = IntArray(2).also { getLocationOnScreen(it) }
+        val report = "okno $limit · chce ${asDp(measuredHeight)} · ma ${asDp(height)}" +
+            " · siatka ${asDp(hintRow.top + keypad.bottom)}" +
+            " · y ${asDp(onScreen[1])} · ekran ${asDp(resources.displayMetrics.heightPixels)}"
+        if (report != reported) {
+            reported = report
+            // Posted rather than set here: assigning text during a layout pass asks for another
+            // one from inside the one running. It settles after a frame and then stops.
+            post { layoutReadout.text = report }
+        }
+    }
+
+    private fun asDp(pixels: Int) = (pixels / resources.displayMetrics.density).toInt()
 
     fun update(state: StripState) {
         candidateRow.text = candidateRow(state)
