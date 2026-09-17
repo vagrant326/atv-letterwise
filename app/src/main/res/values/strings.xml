@@ -148,11 +148,12 @@
     <string name="strip_hint_digits">digits</string>
     <string name="strip_digits_exit_hold">digits — hold 1 for letters</string>
     <string name="strip_marks">marks — one mark and letters are back</string>
-    <string name="strip_hint_layers">layers</string>
-    <string name="strip_layer_keys">hold 1 · letters → marks → digits</string>
+    <string name="strip_hint_marks">marks</string>
+    <string name="strip_hold">hold 1</string>
+    <string name="strip_hold_twice">hold 1 twice</string>
     <string name="strip_hint_case">capitals</string>
     <string name="strip_case_keys">hold 0 · once, then locked</string>
     <string name="strip_case_once" translatable="false">Abc</string>
     <string name="strip_case_locked" translatable="false">ABC</string>
-    <string name="strip_fallback_digits">last on 2-9</string>
+    <string name="strip_fallback_digits">last on 2-9 · hold 1 twice</string>
 </resources>

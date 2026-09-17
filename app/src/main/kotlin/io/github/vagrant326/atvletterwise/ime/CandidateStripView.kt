@@ -50,7 +50,9 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
 
     private val keypad = LinearLayout(context).apply {
         orientation = VERTICAL
-        layoutParams = LayoutParams(dp(276), LayoutParams.WRAP_CONTENT)
+        // Wide enough that the longest group has room to spare on one line. The width was going
+        // spare anyway — what the results underneath are short of is height.
+        layoutParams = LayoutParams(dp(300), LayoutParams.WRAP_CONTENT)
     }
 
     private val keypadCells = mutableMapOf<Char, TextView>()
@@ -83,15 +85,9 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
         hintValue().apply { text = context.getString(R.string.strip_case_keys) },
     )
 
-    /**
-     * Names the whole ring rather than the next step in it, which is what makes it the one line
-     * that stays true in every layer: holding `1` in the marks layer reaches digits, not the
-     * letters a "back to letters" line would have promised.
-     */
-    private val layerLine = hintLine(
-        context.getString(R.string.strip_hint_layers),
-        hintValue().apply { text = context.getString(R.string.strip_layer_keys) },
-    )
+    private val marksValue = hintValue()
+
+    private val marksLine = hintLine(context.getString(R.string.strip_hint_marks), marksValue)
 
     /**
      * The assigned keys, named rather than drawn into the grid, and set beside it.
@@ -127,7 +123,7 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
         // digit and its letters.
         addView(digitsLine)
         addView(caseLine)
-        addView(layerLine)
+        addView(marksLine)
     }
 
     /**
@@ -145,10 +141,7 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
     init {
         orientation = VERTICAL
         setBackgroundColor(BACKGROUND)
-        // The bottom edge is the one a TV eats. A set that overscans cuts the outer few percent
-        // of the panel, and the `0` row sits exactly there — so the strip keeps a margin the
-        // screen is allowed to swallow instead of putting the last row in it.
-        setPadding(dp(12), dp(8), dp(12), dp(28))
+        setPadding(dp(12), dp(8), dp(12), dp(8))
         addView(candidateRow)
         addView(inlineHint)
         addView(hintRow)
@@ -168,19 +161,16 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
         val keypadVisible = state.hintMode == HintMode.KEYPAD
         hintRow.visibility = if (keypadVisible) VISIBLE else GONE
 
-        // Each line is shown where it is true and dropped where it is not. There is nothing to
-        // capitalise among digits, so that one goes; the layer line names the whole ring and
-        // therefore stays.
+        // Each line answers "from here, how?" — so the value follows the layer rather than
+        // describing the keyboard in general, and a line with nothing left to answer goes.
+        // Holding `1` walks letters → marks → digits, which is why reaching past the next
+        // layer costs the hold twice.
         caseLine.visibility = if (state.layer == Layer.DIGITS) GONE else VISIBLE
-        digitsLine.visibility = when (state.layer) {
-            Layer.LETTERS -> VISIBLE
-            // No digit sits at the end of a mark group — they are a layer of their own here —
-            // so there is nothing to name unless a key was assigned to reach it.
-            Layer.SYMBOLS ->
-                if (state.customKeys.digits == KeyBindings.NO_KEY) GONE else VISIBLE
-            // Already under every key.
-            Layer.DIGITS -> GONE
-        }
+        marksLine.visibility = if (state.layer == Layer.SYMBOLS) GONE else VISIBLE
+        marksValue.text = context.getString(
+            if (state.layer == Layer.DIGITS) R.string.strip_hold_twice else R.string.strip_hold
+        )
+        digitsLine.visibility = if (state.layer == Layer.DIGITS) GONE else VISIBLE
         inlineHint.visibility =
             if (state.hintMode == HintMode.INLINE && legend != null) VISIBLE else GONE
 
@@ -199,10 +189,14 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
                 state.customKeys.delete,
                 context.getString(R.string.strip_fallback_delete),
             )
-            digitsValue.text = keyLabel(
-                state.customKeys.digits,
-                context.getString(R.string.strip_fallback_digits),
-            )
+            digitsValue.text = when {
+                state.customKeys.digits != KeyBindings.NO_KEY ->
+                    KeyEvent.keyCodeToString(state.customKeys.digits).removePrefix("KEYCODE_")
+                // No digit sits at the end of a mark group — digits are a layer of their own —
+                // so from here the hold is the whole answer.
+                state.layer == Layer.SYMBOLS -> context.getString(R.string.strip_hold)
+                else -> context.getString(R.string.strip_fallback_digits)
+            }
         }
 
         // Highlight the group the current alternatives came from, so the keypad reads as
@@ -383,15 +377,20 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
             setTextColor(DIM)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
             gravity = Gravity.CENTER
-            // Holds the grid to its height when the second line is empty, so switching layers
-            // does not resize the strip and shift whatever the app is drawing underneath it.
+            // Exactly two lines in every cell, whatever it carries: an empty second line in the
+            // digit layer, and a group of letters that can never wrap onto a third. That is what
+            // keeps the four rows the same height — a row that grew by a line would push the `0`
+            // row down by one and off the bottom of the strip. The cells are wide enough that
+            // capping the lines cannot cost a letter: six is the longest Polish group, `wxyzźż`,
+            // and it takes about half the width available.
             minLines = 2
+            maxLines = 2
             setLineSpacing(0f, 0.95f)
-            setPadding(dp(6), dp(4), dp(6), dp(4))
+            setPadding(dp(6), dp(3), dp(6), dp(3))
             layoutParams = LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
                 marginStart = dp(2)
                 marginEnd = dp(2)
-                topMargin = dp(3)
+                topMargin = dp(2)
             }
             if (key != ' ') {
                 setBackgroundColor(CELL)
