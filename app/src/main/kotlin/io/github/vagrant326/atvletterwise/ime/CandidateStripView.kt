@@ -218,7 +218,7 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
     private fun hintLine(label: String, value: TextView) = LinearLayout(context).apply {
         orientation = HORIZONTAL
         layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT)
-            .apply { topMargin = dp(3) }
+            .apply { topMargin = dp(2) }
         addView(
             TextView(context).apply {
                 text = label
@@ -373,20 +373,21 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
             else -> partition.symbolsFor(key)
         }
         return TextView(context).apply {
-            text = if (key == ' ') "" else "$key\n$letters"
+            text = when {
+                key == ' ' -> ""
+                letters.isEmpty() -> key.toString()
+                else -> "$key  $letters"
+            }
             setTextColor(DIM)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
-            gravity = Gravity.CENTER
-            // Exactly two lines in every cell, whatever it carries: an empty second line in the
-            // digit layer, and a group of letters that can never wrap onto a third. That is what
-            // keeps the four rows the same height — a row that grew by a line would push the `0`
-            // row down by one and off the bottom of the strip. The cells are wide enough that
-            // capping the lines cannot cost a letter: six is the longest Polish group, `wxyzźż`,
-            // and it takes about half the width available.
-            minLines = 2
-            maxLines = 2
-            setLineSpacing(0f, 0.95f)
-            setPadding(dp(6), dp(3), dp(6), dp(3))
+            // The digit sits beside its letters rather than above them, which halves the grid.
+            // Stacked, the four rows were taller than the window the keyboard is given, and the
+            // `0` row — being last — was the part that fell off the bottom of the panel. Left
+            // aligned so the digits still line up in a column, which is what makes the three by
+            // four read as the numpad on the remote rather than as a table.
+            gravity = Gravity.CENTER_VERTICAL or Gravity.START
+            maxLines = 1
+            setPadding(dp(8), dp(4), dp(6), dp(4))
             layoutParams = LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
                 marginStart = dp(2)
                 marginEnd = dp(2)
