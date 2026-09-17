@@ -159,7 +159,15 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
     init {
         orientation = VERTICAL
         setBackgroundColor(BACKGROUND)
-        setPadding(dp(12), dp(5), dp(12), dp(2))
+        // The set eats its own edge. Measured on the television this was written for: the strip
+        // ends at 539dp of a 540dp screen with the whole grid inside it, and the last row is
+        // still not on the panel — so about eleven dp of the bottom is simply never displayed,
+        // and nothing in the layout can be blamed for it.
+        //
+        // These are the Android TV safe-area margins, five percent of each axis, which is the
+        // convention this is exactly the case for. T9 survived on twelve dp of luck; this is the
+        // same thing done deliberately, with room for a set that overscans harder.
+        setPadding(dp(28), dp(5), dp(28), dp(27))
         buildKeypad()
         // First, so that the one thing being measured is never the thing that gets cut off.
         addView(layoutReadout)
