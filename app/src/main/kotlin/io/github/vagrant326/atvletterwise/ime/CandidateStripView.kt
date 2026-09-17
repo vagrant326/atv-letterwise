@@ -66,9 +66,27 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
      */
     private var keypadLegend: Partition? = null
 
+    /**
+     * Tracked beside [keypadLegend] because the digit layer has no partition to compare: without
+     * it the grid would keep its letters on the way in and lose them again on the way out.
+     */
+    private var keypadLayer: Layer? = null
+
     private val languageValue = hintValue()
     private val deleteValue = hintValue()
     private val digitsValue = hintValue()
+
+    private val digitsLine = hintLine(context.getString(R.string.strip_hint_digits), digitsValue)
+
+    private val caseLine = hintLine(
+        context.getString(R.string.strip_hint_case),
+        hintValue().apply { text = context.getString(R.string.strip_case_keys) },
+    )
+
+    private val marksLine = hintLine(
+        context.getString(R.string.strip_hint_marks),
+        hintValue().apply { text = context.getString(R.string.strip_marks_keys) },
+    )
 
     /**
      * The assigned keys, named rather than drawn into the grid, and set beside it.
@@ -102,13 +120,9 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
         // Nothing on the remote or in the grid says the number keys have a second meaning, and
         // the grid cannot say it: the cells are three characters wide and already carry the
         // digit and its letters.
-        addView(hintLine(context.getString(R.string.strip_hint_digits), digitsValue))
-        addView(hintLine(context.getString(R.string.strip_hint_case), hintValue().apply {
-            text = context.getString(R.string.strip_case_keys)
-        }))
-        addView(hintLine(context.getString(R.string.strip_hint_marks), hintValue().apply {
-            text = context.getString(R.string.strip_marks_keys)
-        }))
+        addView(digitsLine)
+        addView(caseLine)
+        addView(marksLine)
     }
 
     /**
@@ -136,14 +150,23 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
         candidateRow.text = candidateRow(state)
 
         val legend = state.legend
-        if (legend != null && keypadLegend !== legend) {
+        if (keypadLegend !== legend || keypadLayer != state.layer) {
             keypad.removeAllViews()
             keypadCells.clear()
             buildKeypad(legend)
             keypadLegend = legend
+            keypadLayer = state.layer
         }
-        val keypadVisible = state.hintMode == HintMode.KEYPAD && legend != null
+        val keypadVisible = state.hintMode == HintMode.KEYPAD
         hintRow.visibility = if (keypadVisible) VISIBLE else GONE
+
+        // The digit layer answers each of these with something else: capitals do nothing among
+        // digits, holding `1` leads back to letters rather than on to marks, and the digits are
+        // already under the keys. Dropped rather than left to say something untrue.
+        val letters = state.layer != Layer.DIGITS
+        digitsLine.visibility = if (letters) VISIBLE else GONE
+        caseLine.visibility = if (letters) VISIBLE else GONE
+        marksLine.visibility = if (letters) VISIBLE else GONE
         inlineHint.visibility =
             if (state.hintMode == HintMode.INLINE && legend != null) VISIBLE else GONE
 
@@ -315,8 +338,10 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
     /**
      * The physical numpad: 123 / 456 / 789 / 0. No `*` or `#` row — this is not a phone and
      * those keys are not on every remote, so drawing them promises buttons that may not exist.
+     *
+     * A null [partition] is the digit layer: the grid is drawn with the digits alone.
      */
-    private fun buildKeypad(partition: Partition) {
+    private fun buildKeypad(partition: Partition?) {
         for (row in listOf("123", "456", "789", " 0 ")) {
             val line = LinearLayout(context).apply {
                 orientation = HORIZONTAL
@@ -329,11 +354,14 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
         }
     }
 
-    private fun cell(key: Char, partition: Partition): TextView {
-        val letters = when (key) {
-            ' ' -> ""
-            '0' -> context.getString(R.string.strip_space)
-            '1' -> ".,-"
+    private fun cell(key: Char, partition: Partition?): TextView {
+        val letters = when {
+            key == ' ' -> ""
+            // The digit layer: `0` is a zero rather than a space and `1` is a one rather than
+            // the punctuation cycle, so every key carries the digit printed on it and nothing else.
+            partition == null -> ""
+            key == '0' -> context.getString(R.string.strip_space)
+            key == '1' -> ".,-"
             else -> partition.symbolsFor(key)
         }
         return TextView(context).apply {
@@ -341,6 +369,9 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
             setTextColor(DIM)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
             gravity = Gravity.CENTER
+            // Holds the grid to its height when the second line is empty, so switching layers
+            // does not resize the strip and shift whatever the app is drawing underneath it.
+            minLines = 2
             setLineSpacing(0f, 0.95f)
             setPadding(dp(6), dp(4), dp(6), dp(4))
             layoutParams = LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {

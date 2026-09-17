@@ -25,14 +25,15 @@ data class StripState(
      */
     val hasEditor: Boolean,
     /**
-     * What the numeric row is for. The letter legend is hidden in the digit layer, because
-     * a legend that promises `abc` on a key now producing `2` is worse than no legend at all.
+     * What the numeric row is for. In the digit layer the letters come off the keys, because a
+     * legend that promises `abc` on a key now producing `2` is worse than no legend at all. The
+     * grid itself stays: a keypad that vanishes reads as a keyboard that has gone away.
      */
     val layer: Layer,
 ) {
     /**
      * Which partition the keypad legend should spell out, or null in the digit layer where every
-     * key is simply the digit printed on it and the legend has nothing to add.
+     * key is simply the digit printed on it and there is nothing to write underneath it.
      */
     val legend: Partition?
         get() = when (layer) {
