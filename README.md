@@ -181,8 +181,10 @@ the KSPC that ships.
 picker. That is the point — an experiment that misbehaves does not take the working keyboard
 with it, and this project has already lost a TV's navigation to one.
 
-Each channel counts its own versions and updates only from its own releases, matched by tag
-prefix. A dev build will never offer to install a production APK over itself.
+Production owns the major and the minor; a dev build keeps them and counts the patch from the
+last production release, so `dev-0.2.7` is the seventh dev build past `v0.2.0`. Each channel
+still updates only from its own releases, matched by tag prefix — a dev build will never offer
+to install a production APK over itself.
 
 Dev releases are published as prereleases, so they do not show up as "Latest" on the releases
 page — look further down the list, or just use the `latest-dev` address, which always points
