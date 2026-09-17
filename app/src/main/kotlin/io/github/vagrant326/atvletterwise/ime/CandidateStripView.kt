@@ -378,7 +378,8 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
 
     /**
      * What one cell says. Always two lines, whichever layer is on, so re-lettering the grid can
-     * never change its height.
+     * never change its height — the digit layer's blank second line is a non-breaking space
+     * rather than nothing, because a line has to have something on it to be a line.
      *
      * A null [legend] is the digit layer: `0` is a zero rather than a space and `1` is a one
      * rather than the punctuation cycle, so every key carries the digit and nothing else.
@@ -393,7 +394,7 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
             key == '1' -> ".,-"
             else -> legend.symbolsFor(key)
         }
-        return "$key\n$letters"
+        return "$key\n${letters.ifEmpty { " " }}"
     }
 
     private fun cell(key: Char): TextView {
@@ -402,15 +403,10 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
             setTextColor(DIM)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
             gravity = Gravity.CENTER
-            // Two lines, never one and never three, whatever the cell is re-lettered with. The
-            // grid's height is then fixed for the life of the view, so nothing it says can make
-            // the strip ask to be measured again.
-            minLines = 2
-            maxLines = 2
-            // The font's own padding is space reserved above the ascent and below the descent,
-            // so dropping it shortens the grid without costing any part of a glyph — an ogonek
-            // sits inside the descent, not in the padding.
-            includeFontPadding = false
+            // Nothing clever here on purpose. Capping the lines, pinning them, and dropping the
+            // font's padding each looked free and between them they sliced the bottom off the
+            // one cell whose label has a deep descender — `spacja`, the `j`. T9 draws this grid
+            // with none of it and has never lost a glyph, so this is its configuration exactly.
             setLineSpacing(0f, 0.95f)
             setPadding(dp(6), dp(4), dp(6), dp(4))
             layoutParams = LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
