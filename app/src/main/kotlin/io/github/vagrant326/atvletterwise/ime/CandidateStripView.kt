@@ -141,7 +141,9 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
     init {
         orientation = VERTICAL
         setBackgroundColor(BACKGROUND)
-        setPadding(dp(12), dp(8), dp(12), dp(8))
+        // Only what sits above the grid is worth trimming: the padding underneath it is in the
+        // part the window clips anyway, so taking it away would buy the `0` row nothing.
+        setPadding(dp(12), dp(5), dp(12), dp(8))
         addView(candidateRow)
         addView(inlineHint)
         addView(hintRow)
@@ -373,25 +375,26 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
             else -> partition.symbolsFor(key)
         }
         return TextView(context).apply {
-            text = when {
-                key == ' ' -> ""
-                letters.isEmpty() -> key.toString()
-                else -> "$key  $letters"
-            }
+            text = if (key == ' ') "" else "$key\n$letters"
             setTextColor(DIM)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
-            // The digit sits beside its letters rather than above them, which halves the grid.
-            // Stacked, the four rows were taller than the window the keyboard is given, and the
-            // `0` row — being last — was the part that fell off the bottom of the panel. Left
-            // aligned so the digits still line up in a column, which is what makes the three by
-            // four read as the numpad on the remote rather than as a table.
-            gravity = Gravity.CENTER_VERTICAL or Gravity.START
-            maxLines = 1
-            setPadding(dp(8), dp(4), dp(6), dp(4))
+            gravity = Gravity.CENTER
+            // Exactly two lines in every cell, whatever it carries: an empty second line in the
+            // digit layer, and a group of letters that can never wrap onto a third. That keeps
+            // the four rows the same height — a row that grew by a line would push the `0` row
+            // one line further down, and down is where the strip runs out of window.
+            minLines = 2
+            maxLines = 2
+            // Tight on purpose. The window the keyboard is given does not grow with the view: it
+            // shows what fits and clips the rest, and the `0` row is what was falling off the
+            // bottom. Everything here is spent four times over, so a dp saved inside a cell is
+            // four dp the last row gets back.
+            setLineSpacing(0f, 0.88f)
+            setPadding(dp(6), dp(2), dp(6), dp(2))
             layoutParams = LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
                 marginStart = dp(2)
                 marginEnd = dp(2)
-                topMargin = dp(2)
+                topMargin = dp(1)
             }
             if (key != ' ') {
                 setBackgroundColor(CELL)
