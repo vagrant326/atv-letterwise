@@ -141,9 +141,10 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
     init {
         orientation = VERTICAL
         setBackgroundColor(BACKGROUND)
-        // Only what sits above the grid is worth trimming: the padding underneath it is in the
-        // part the window clips anyway, so taking it away would buy the `0` row nothing.
-        setPadding(dp(12), dp(5), dp(12), dp(8))
+        // The padding under the grid is inside the height budget, not below it — the strip draws
+        // it while the `0` row above it is being squeezed — so it is six dp taken straight off
+        // the one row that has none to spare.
+        setPadding(dp(12), dp(5), dp(12), dp(2))
         addView(candidateRow)
         addView(inlineHint)
         addView(hintRow)
@@ -385,11 +386,14 @@ class CandidateStripView(context: Context) : LinearLayout(context) {
             // one line further down, and down is where the strip runs out of window.
             minLines = 2
             maxLines = 2
-            // Tight on purpose. The window the keyboard is given does not grow with the view: it
-            // shows what fits and clips the rest, and the `0` row is what was falling off the
-            // bottom. Everything here is spent four times over, so a dp saved inside a cell is
-            // four dp the last row gets back.
-            setLineSpacing(0f, 0.88f)
+            // The keyboard is given a height budget and the grid is what overruns it, so a dp
+            // saved in a cell is four dp the `0` row gets back. This is the one place to take it
+            // from: the font's own padding is space reserved above the ascent and below the
+            // descent, so dropping it costs no part of a glyph — an ogonek sits inside the
+            // descent, not in the padding. Compressing the line spacing instead ate into the
+            // letters themselves.
+            includeFontPadding = false
+            setLineSpacing(0f, 0.95f)
             setPadding(dp(6), dp(2), dp(6), dp(2))
             layoutParams = LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
                 marginStart = dp(2)
